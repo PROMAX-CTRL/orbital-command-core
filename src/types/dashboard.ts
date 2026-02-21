@@ -1,11 +1,16 @@
 export interface RiskAssessment {
   id: string;
-  title: string;
+  risk_type: string;
   severity: 'critical' | 'high' | 'medium' | 'low';
-  category: string;
+  title: string;
   description: string;
+  affected_team_members: string[] | null;
+  related_data: Record<string, unknown> | null;
+  suggested_action: string | null;
+  is_active: boolean;
+  detected_at: string;
+  resolved_at: string | null;
   created_at: string;
-  status: string;
 }
 
 export interface TeamMember {
