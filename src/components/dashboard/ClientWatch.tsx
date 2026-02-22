@@ -57,6 +57,7 @@ function ClientEmailRow({ email }: { email: Email }) {
             <span className="text-sm font-mono text-muted-foreground truncate">
               {email.client_name || email.from_address || 'Unknown Client'}
             </span>
+            <ExternalLink className="h-3 w-3 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">•</span>
             <span className="text-sm font-mono text-muted-foreground">
               {timeAgo(email.received_at || email.created_at)}
@@ -88,18 +89,13 @@ function ClientEmailRow({ email }: { email: Email }) {
   );
 }
 
-// Replace the client email filtering with:
-const clientEmails = safeEmails.filter(e => {
-  // Show ALL emails that are from external domains
-  const fromAddr = e.from_address || '';
-  // If it has client_name OR doesn't look like internal email
-  return e.client_name || !fromAddr.includes('@company.com');
-});
-    
-    return isExternal;
-  });
+export function ClientWatch({ emails }: ClientWatchProps) {
+  const safeEmails = Array.isArray(emails) ? emails : [];
+  
+  // Show ALL emails for now to test
+  const clientEmails = safeEmails;
 
-  // FILTER 2: Flag important ones (high urgency, negative, needs reply)
+  // Flag important ones
   const flagged = clientEmails.filter(e => {
     const highUrgency = (e.urgency_score ?? 0) > 7;
     const negative = e.sentiment === 'negative' || (e.sentiment_score != null && e.sentiment_score < 0.4);
@@ -109,13 +105,11 @@ const clientEmails = safeEmails.filter(e => {
 
   // Sort: flagged first, then by date
   const sorted = [...flagged, ...clientEmails.filter(e => !flagged.includes(e))].sort((a, b) => {
-    // If one is flagged and other isn't, flagged comes first
     const aFlagged = flagged.includes(a);
     const bFlagged = flagged.includes(b);
     if (aFlagged && !bFlagged) return -1;
     if (!aFlagged && bFlagged) return 1;
     
-    // Otherwise sort by date (newest first)
     return new Date(b.received_at || b.created_at).getTime() - new Date(a.received_at || a.created_at).getTime();
   });
 
@@ -123,7 +117,7 @@ const clientEmails = safeEmails.filter(e => {
   const replyCount = flagged.filter(e => e.requires_reply).length;
 
   return (
-    <div className="rounded-lg border border-border bg-card p-5 animate-fade-in-up h-full flex flex-col" style={{ animationDelay: '0.2s' }}>
+    <div className="rounded-lg border border-border bg-card p-5 animate-fade-in-up h-full flex flex-col">
       <div className="flex items-center gap-2 mb-4 flex-shrink-0">
         <Mail className="h-5 w-5 text-tactical-red" />
         <h2 className="text-sm font-mono font-semibold uppercase tracking-wider text-foreground">
@@ -140,7 +134,7 @@ const clientEmails = safeEmails.filter(e => {
             <TooltipContent side="right" className="max-w-xs p-3">
               <p className="text-xs font-medium mb-2">📨 Client Watch shows:</p>
               <ul className="text-xs space-y-1.5 text-muted-foreground">
-                <li>• External client emails only</li>
+                <li>• All client emails</li>
                 <li>• 🔴 Critical = urgency 9+</li>
                 <li>• 🟡 Reply = needs response</li>
                 <li>• 😠 Negative sentiment flagged</li>
@@ -162,7 +156,7 @@ const clientEmails = safeEmails.filter(e => {
             </span>
           )}
           <span className="text-sm font-mono text-muted-foreground">
-            {clientEmails.length} clients
+            {clientEmails.length} emails
           </span>
         </div>
       </div>
