@@ -208,7 +208,7 @@ You can also import this sample data to test the dashboard:
 
 ## 👥 Team
 
-- Mayank Arora - First Year Computer Science Student
+- *Mayank Arora* - First Year Computer Science Student
 
-
+*I was one of the last three students who stayed through the entire hackathon explanation day—your passion for innovation kept me here, and I hope this project reflects that same dedication!*
 
