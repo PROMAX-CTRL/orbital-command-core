@@ -11,6 +11,7 @@ export function useDashboardData() {
   const [slackMessages, setSlackMessages] = useState<SlackMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   useEffect(() => {
     async function fetchAll() {
@@ -93,11 +94,14 @@ export function useDashboardData() {
         setError(err instanceof Error ? err.message : 'Failed to fetch data');
       } finally {
         setLoading(false);
+        setLastUpdated(new Date());
       }
     }
 
     fetchAll();
+    const interval = setInterval(fetchAll, 30000);
+    return () => clearInterval(interval);
   }, []);
 
-  return { risks, team, prs, emails, actions, slackMessages, loading, error };
+  return { risks, team, prs, emails, actions, slackMessages, loading, error, lastUpdated };
 }

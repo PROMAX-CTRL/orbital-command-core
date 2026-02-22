@@ -9,7 +9,7 @@ import { NextActions } from '@/components/dashboard/NextActions';
 import { Loader2 } from 'lucide-react';
 
 const Index = () => {
-  const { risks, team, prs, emails, actions, slackMessages, loading, error } = useDashboardData();
+  const { risks, team, prs, emails, actions, slackMessages, loading, error, lastUpdated } = useDashboardData();
 
   return (
     <div className="min-h-screen bg-background scanline">
@@ -18,6 +18,7 @@ const Index = () => {
         error={error}
         riskCount={risks.length}
         teamCount={team.length}
+        lastUpdated={lastUpdated}
       />
 
       <main className="max-w-[1600px] mx-auto px-6 py-6">

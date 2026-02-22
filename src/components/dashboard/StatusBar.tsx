@@ -5,9 +5,10 @@ interface StatusBarProps {
   error: string | null;
   riskCount: number;
   teamCount: number;
+  lastUpdated: Date | null;
 }
 
-export function StatusBar({ loading, error, riskCount, teamCount }: StatusBarProps) {
+export function StatusBar({ loading, error, riskCount, teamCount, lastUpdated }: StatusBarProps) {
   return (
     <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
       <div className="max-w-[1600px] mx-auto px-6 py-3 flex items-center justify-between">
@@ -23,6 +24,11 @@ export function StatusBar({ loading, error, riskCount, teamCount }: StatusBarPro
         </div>
 
         <div className="flex items-center gap-4">
+          {lastUpdated && (
+            <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">
+              Updated {lastUpdated.toLocaleTimeString()}
+            </span>
+          )}
           <div className="flex items-center gap-2">
             <Activity className="h-3 w-3 text-tactical-green" />
             <span className="text-xs font-mono text-muted-foreground">
