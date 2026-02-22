@@ -51,17 +51,12 @@ function GithubPRItem({ pr }: { pr: any }) {
             stale
           </Badge>
         )}
-        {pr.review_count > 0 && (
-          <Badge variant="outline" className="text-xs font-mono border-tactical-green/40 bg-tactical-green/15 text-tactical-green">
-            {pr.review_count} review{pr.review_count !== 1 ? 's' : ''}
-          </Badge>
-        )}
       </div>
     </div>
   );
 }
 
-// Technical Email Item (project-related)
+// Technical Email Item
 function TechnicalEmailItem({ email }: { email: Email }) {
   const time = timeAgo(email.received_at ?? email.created_at);
   const isNegative = email.sentiment === 'negative';
@@ -107,32 +102,17 @@ export function ProjectRadar({ emails, github = [] }: ProjectRadarProps) {
   // Get GitHub PRs (open ones)
   const projectPRs = (Array.isArray(github) ? github : [])
     .filter(pr => pr?.status === 'open')
-    .sort((a, b) => b.days_open - a.days_open) // Most stale first
+    .sort((a, b) => b.days_open - a.days_open)
     .slice(0, 8);
 
-// Replace the filtering section with this:
-const projectPRs = (Array.isArray(github) ? github : [])
-  .filter(pr => pr?.status === 'open') // Show all open PRs
-  .sort((a, b) => b.days_open - a.days_open);
-
-const technicalEmails = (Array.isArray(emails) ? emails : [])
-  .filter(e => {
-    // Show emails that are project-related OR from internal domains
-    const subject = e.subject?.toLowerCase() || '';
-    const isProjectRelated = subject.includes('pr') || 
-                            subject.includes('build') || 
-                            subject.includes('deploy') ||
-                            subject.includes('review') ||
-                            subject.includes('bug') ||
-                            subject.includes('fix');
-    
-    // For now, show ALL emails to test
-    return true; // TEMPORARY - shows all emails
-  });
-    
-    // Show internal emails with project keywords, OR any email with strong project signals
-    return (isInternal && hasProjectKeywords) || hasProjectKeywords;
-  }).slice(0, 5);
+  // Get technical/project emails
+  const technicalEmails = (Array.isArray(emails) ? emails : [])
+    .filter(e => {
+      const subject = e.subject?.toLowerCase() || '';
+      // Show all emails for now to test
+      return true;
+    })
+    .slice(0, 5);
 
   // Combine and sort by date
   const allItems = [
@@ -141,7 +121,7 @@ const technicalEmails = (Array.isArray(emails) ? emails : [])
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   return (
-    <div className="rounded-lg border border-border bg-card p-5 animate-fade-in-up h-full flex flex-col" style={{ animationDelay: '0.2s' }}>
+    <div className="rounded-lg border border-border bg-card p-5 animate-fade-in-up h-full flex flex-col">
       <div className="flex items-center gap-2 mb-4 flex-shrink-0">
         <Radar className="h-5 w-5 text-primary" />
         <h2 className="text-sm font-mono font-semibold uppercase tracking-wider text-foreground">
@@ -159,9 +139,7 @@ const technicalEmails = (Array.isArray(emails) ? emails : [])
               <p className="text-xs font-medium mb-2">🎯 Project Radar tracks:</p>
               <ul className="text-xs space-y-1.5 text-muted-foreground">
                 <li><GitPullRequest className="h-3 w-3 inline mr-1" /> Open PRs needing review</li>
-                <li><Bug className="h-3 w-3 inline mr-1" /> Build/deployment issues</li>
-                <li>📧 Technical emails (internal/project)</li>
-                <li className="mt-1 pt-1 border-t border-border">No client emails shown here</li>
+                <li><Bug className="h-3 w-3 inline mr-1" /> Technical emails</li>
               </ul>
             </TooltipContent>
           </Tooltip>
