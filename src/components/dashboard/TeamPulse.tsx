@@ -117,15 +117,35 @@ export function TeamPulse({ team, slackMessages }: TeamPulseProps) {
         </div>
       </div>
 
-      {/* Column headers */}
-      <div className="flex items-center gap-3 px-3 py-1.5 mb-1 text-[10px] font-mono text-muted-foreground uppercase tracking-wider">
-        <div className="w-8" />
-        <div className="flex-1">Member</div>
-        <div className="w-20 text-center">Sentiment</div>
-        <div className="w-16 text-center">After hrs</div>
-        <div className="w-14 text-center">Msgs</div>
-        <div className="w-14 text-center">Trend</div>
-      </div>
+      {/* Column headers with explanations */}
+<div className="flex items-center gap-3 px-3 py-1.5 mb-1 text-[10px] font-mono text-muted-foreground uppercase tracking-wider border-b border-border">
+  <div className="w-8" />
+  <div className="flex-1">Member</div>
+  <div className="w-20 text-center group relative">
+    Sentiment
+    <span className="hidden group-hover:block absolute bottom-full left-1/2 transform -translate-x-1/2 bg-popover text-popover-foreground text-[8px] p-1 rounded border border-border whitespace-nowrap z-10">
+      Avg message sentiment (0-10)
+    </span>
+  </div>
+  <div className="w-16 text-center group relative">
+    After hrs
+    <span className="hidden group-hover:block absolute bottom-full left-1/2 transform -translate-x-1/2 bg-popover text-popover-foreground text-[8px] p-1 rounded border border-border whitespace-nowrap z-10">
+      Messages after 7pm
+    </span>
+  </div>
+  <div className="w-14 text-center group relative">
+    Msgs
+    <span className="hidden group-hover:block absolute bottom-full left-1/2 transform -translate-x-1/2 bg-popover text-popover-foreground text-[8px] p-1 rounded border border-border whitespace-nowrap z-10">
+      Total messages (7d)
+    </span>
+  </div>
+  <div className="w-14 text-center group relative">
+    Trend
+    <span className="hidden group-hover:block absolute bottom-full left-1/2 transform -translate-x-1/2 bg-popover text-popover-foreground text-[8px] p-1 rounded border border-border whitespace-nowrap z-10">
+      Sentiment trend (↑/→/↓)
+    </span>
+  </div>
+</div>
 
       {team.length === 0 ? (
         <p className="text-sm text-muted-foreground font-mono">No team data available</p>
