@@ -1,73 +1,60 @@
-# Welcome to your Lovable project
+# 🚀 Mission Control Dashboard
 
-## Project info
+An AI-powered dashboard for engineering managers to spot team risks before they become crises.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+![Mission Control Dashboard](https://via.placeholder.com/800x400?text=Mission+Control+Dashboard)
 
-## How can I edit this code?
+## ✨ Features
 
-There are several ways of editing your application.
+### 🔥 Risk Heatmap
+- **Burnout Risk**: Detect team members working late with negative sentiment
+- **Delivery Risk**: Identify stale PRs blocking progress
+- **Stakeholder Risk**: Flag urgent client communications
+- **Tech Debt**: Track dependency updates and maintenance needs
 
-**Use Lovable**
+### 👥 Team Pulse
+- **Sentiment Analysis**: Average message mood from Slack (0-10 scale)
+- **After-Hours Tracking**: Messages sent after 7pm (burnout indicator)
+- **Message Volume**: Total messages in last 7 days
+- **Trend Indicators**: How sentiment is changing (↑ improving, → stable, ↓ declining)
+- **At-Risk Alerts**: ⚠️ Team members showing signs of burnout
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+### 📊 Project Radar
+- **Open Pull Requests**: Track PRs needing review
+- **Technical Emails**: Project-related communications
+- **Stale Indicators**: PRs open >3 days flagged
 
-Changes made via Lovable will be committed automatically to this repo.
+### 📧 Client Watch
+- **Client Emails**: External communications only
+- **Urgency Scoring**: 1-10 priority scale
+- **Sentiment Detection**: 😠 Negative sentiment flagged
+- **Reply Tracking**: 🟡 Messages needing response
 
-**Use your preferred IDE**
+### 🚧 Delivery Risks
+- **Open PR Count**: Total pull requests in flight
+- **Stale PRs**: Open >3 days (🟡) and >7 days (🔴)
+- **PR Details**: Author, repository, days open
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### ⏭️ Next Actions
+- **AI-Generated Tasks**: From risks, emails, and stale PRs
+- **Priority Levels**: Critical, High, Medium, Low
+- **One-Click Resolution**: Mark actions complete
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## 🧠 Ethical AI Layer
 
-Follow these steps:
+Unlike productivity tools that optimize purely for output, Mission Control prioritizes **human wellbeing**:
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+- **Burnout Detection**: After-hours messaging + negative sentiment
+- **Team Health Monitoring**: Communication pattern analysis
+- **Suggested Check-ins**: Not just task assignments
+- **Privacy-First Design**: All data stays within your infrastructure
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## 🛠️ Tech Stack
 
-# Step 3: Install the necessary dependencies.
-npm i
+- **Frontend**: React + TypeScript
+- **UI Components**: shadcn/ui + Tailwind CSS
+- **Data Fetching**: Supabase Realtime
+- **Build Tool**: Vite
+- **Styling**: Tailwind CSS with custom tactical theme
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## 📁 Project Structure
