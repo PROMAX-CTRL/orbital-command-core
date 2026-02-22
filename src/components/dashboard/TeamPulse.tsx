@@ -1,6 +1,12 @@
 import { useMemo } from 'react';
 import type { TeamMember, SlackMessage } from '@/types/dashboard';
-import { AlertTriangle, Moon, TrendingDown, TrendingUp, Minus } from 'lucide-react';
+import { AlertTriangle, Moon, TrendingDown, TrendingUp, Minus, Info } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface TeamPulseProps {
   team: TeamMember[];
@@ -39,7 +45,6 @@ function SentimentSparkline({ scores }: { scores: number[] }) {
         strokeLinejoin="round"
         points={points.join(' ')}
       />
-      {/* Latest point dot */}
       {scores.length > 0 && (
         <circle
           cx={padding + ((scores.length - 1) / (scores.length - 1)) * innerW}
@@ -69,7 +74,6 @@ export function TeamPulse({ team, slackMessages }: TeamPulseProps) {
   // Build sentiment scores per user from slack messages (ordered by timestamp)
   const userSentimentScores = useMemo(() => {
     const map: Record<string, number[]> = {};
-    // Sort by timestamp ascending for sparkline
     const sorted = [...slackMessages].sort(
       (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
@@ -99,11 +103,49 @@ export function TeamPulse({ team, slackMessages }: TeamPulseProps) {
 
   return (
     <div className="rounded-lg border border-border bg-card p-5 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+      {/* Header with tooltip */}
       <div className="flex items-center gap-2 mb-4">
         <div className="h-2 w-2 rounded-full bg-tactical-blue status-pulse" />
         <h2 className="text-sm font-mono font-semibold uppercase tracking-wider text-foreground">
           Team Pulse
         </h2>
+        
+        {/* Info tooltip */}
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button className="h-5 w-5 rounded-full bg-secondary/50 flex items-center justify-center hover:bg-secondary transition-colors">
+                <Info className="h-3 w-3 text-muted-foreground" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="max-w-xs p-3">
+              <p className="text-xs font-medium mb-2">🔍 Team Pulse monitors:</p>
+              <ul className="text-xs space-y-1.5 text-muted-foreground">
+                <li className="flex items-start gap-2">
+                  <span className="text-tactical-blue font-bold">•</span>
+                  <span><span className="font-bold text-foreground">Sentiment:</span> Average message mood (0-10) from Slack</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-tactical-blue font-bold">•</span>
+                  <span><span className="font-bold text-foreground">After hrs:</span> Messages after 7pm (burnout indicator)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-tactical-blue font-bold">•</span>
+                  <span><span className="font-bold text-foreground">Msgs:</span> Total messages in last 7 days</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-tactical-blue font-bold">•</span>
+                  <span><span className="font-bold text-foreground">Trend:</span> Sentiment change (↑ improving, → stable, ↓ declining)</span>
+                </li>
+                <li className="flex items-start gap-2 mt-1 pt-1 border-t border-border">
+                  <span className="text-tactical-red font-bold">⚠️</span>
+                  <span><span className="font-bold text-tactical-red">AT RISK</span> = potential burnout</span>
+                </li>
+              </ul>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
         <div className="ml-auto flex items-center gap-3">
           {atRiskCount > 0 && (
             <div className="flex items-center gap-1 text-tactical-red">
@@ -117,36 +159,37 @@ export function TeamPulse({ team, slackMessages }: TeamPulseProps) {
         </div>
       </div>
 
-      {/* Column headers with explanations */}
-<div className="flex items-center gap-3 px-3 py-1.5 mb-1 text-[10px] font-mono text-muted-foreground uppercase tracking-wider border-b border-border">
-  <div className="w-8" />
-  <div className="flex-1">Member</div>
-  <div className="w-20 text-center group relative">
-    Sentiment
-    <span className="hidden group-hover:block absolute bottom-full left-1/2 transform -translate-x-1/2 bg-popover text-popover-foreground text-[8px] p-1 rounded border border-border whitespace-nowrap z-10">
-      Avg message sentiment (0-10)
-    </span>
-  </div>
-  <div className="w-16 text-center group relative">
-    After hrs
-    <span className="hidden group-hover:block absolute bottom-full left-1/2 transform -translate-x-1/2 bg-popover text-popover-foreground text-[8px] p-1 rounded border border-border whitespace-nowrap z-10">
-      Messages after 7pm
-    </span>
-  </div>
-  <div className="w-14 text-center group relative">
-    Msgs
-    <span className="hidden group-hover:block absolute bottom-full left-1/2 transform -translate-x-1/2 bg-popover text-popover-foreground text-[8px] p-1 rounded border border-border whitespace-nowrap z-10">
-      Total messages (7d)
-    </span>
-  </div>
-  <div className="w-14 text-center group relative">
-    Trend
-    <span className="hidden group-hover:block absolute bottom-full left-1/2 transform -translate-x-1/2 bg-popover text-popover-foreground text-[8px] p-1 rounded border border-border whitespace-nowrap z-10">
-      Sentiment trend (↑/→/↓)
-    </span>
-  </div>
-</div>
+      {/* Column headers with hover tooltips */}
+      <div className="flex items-center gap-3 px-3 py-1.5 mb-1 text-[10px] font-mono text-muted-foreground uppercase tracking-wider border-b border-border">
+        <div className="w-8" />
+        <div className="flex-1">Member</div>
+        <div className="w-20 text-center group relative">
+          Sentiment
+          <span className="hidden group-hover:block absolute bottom-full left-1/2 transform -translate-x-1/2 bg-popover text-popover-foreground text-[8px] p-1 rounded border border-border whitespace-nowrap z-10">
+            Avg message sentiment (0-10)
+          </span>
+        </div>
+        <div className="w-16 text-center group relative">
+          After hrs
+          <span className="hidden group-hover:block absolute bottom-full left-1/2 transform -translate-x-1/2 bg-popover text-popover-foreground text-[8px] p-1 rounded border border-border whitespace-nowrap z-10">
+            Messages after 7pm
+          </span>
+        </div>
+        <div className="w-14 text-center group relative">
+          Msgs
+          <span className="hidden group-hover:block absolute bottom-full left-1/2 transform -translate-x-1/2 bg-popover text-popover-foreground text-[8px] p-1 rounded border border-border whitespace-nowrap z-10">
+            Total messages (7d)
+          </span>
+        </div>
+        <div className="w-14 text-center group relative">
+          Trend
+          <span className="hidden group-hover:block absolute bottom-full left-1/2 transform -translate-x-1/2 bg-popover text-popover-foreground text-[8px] p-1 rounded border border-border whitespace-nowrap z-10">
+            Sentiment trend (↑/→/↓)
+          </span>
+        </div>
+      </div>
 
+      {/* Team members list */}
       {team.length === 0 ? (
         <p className="text-sm text-muted-foreground font-mono">No team data available</p>
       ) : (
@@ -154,9 +197,6 @@ export function TeamPulse({ team, slackMessages }: TeamPulseProps) {
           {sorted.map(member => {
             const scores = userSentimentScores[member.name] || [];
             const msgs = messageCount[member.name] || 0;
-            const avgSentiment = scores.length > 0
-              ? scores.reduce((a, b) => a + b, 0) / scores.length
-              : null;
 
             return (
               <div
