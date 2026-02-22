@@ -8,10 +8,15 @@ interface ProjectRadarProps {
 }
 
 function timeAgo(dateStr: string) {
-  const hours = Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60));
-  if (hours < 1) return '<1h ago';
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
+  if (!dateStr) return 'unknown';
+  try {
+    const hours = Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60));
+    if (hours < 1) return '<1h ago';
+    if (hours < 24) return `${hours}h ago`;
+    return `${Math.floor(hours / 24)}d ago`;
+  } catch {
+    return 'unknown';
+  }
 }
 
 function ProjectItem({ email }: { email: Email }) {
@@ -19,11 +24,15 @@ function ProjectItem({ email }: { email: Email }) {
   const isPositive = email.sentiment === 'positive';
   const needsReply = email.requires_reply;
   const time = timeAgo(email.received_at ?? email.created_at);
+  
+  // Safe way to get sender name
+  const senderName = email.client_name || 
+    (email.from_address ? email.from_address.split('@')[0] : 'Unknown');
 
   return (
     <div className="rounded-md border border-border bg-secondary/30 px-4 py-3 flex items-center gap-3 hover:bg-secondary/50 transition-colors">
       <div className="flex-1 min-w-0">
-        <span className="text-sm font-semibold text-foreground">{email.subject}</span>
+        <span className="text-sm font-semibold text-foreground">{email.subject || 'No subject'}</span>
         <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
           {isNegative && (
             <Badge variant="outline" className="text-[10px] font-mono border-destructive/40 bg-destructive/15 text-destructive px-1.5 py-0">
@@ -45,7 +54,7 @@ function ProjectItem({ email }: { email: Email }) {
         </div>
         <div className="flex items-center gap-2 mt-1">
           <span className="text-xs font-mono text-muted-foreground">
-            {email.client_name || email.from_address.split('@')[0]}
+            {senderName}
           </span>
         </div>
       </div>
@@ -58,17 +67,23 @@ function ProjectItem({ email }: { email: Email }) {
 }
 
 export function ProjectRadar({ emails }: ProjectRadarProps) {
+  // Ensure emails is an array
+  const safeEmails = Array.isArray(emails) ? emails : [];
+  
   // Show project-relevant items (negative, need reply, or positive)
-  const projectItems = emails.filter(
-    (e) => e.sentiment === 'negative' || e.requires_reply || e.sentiment === 'positive'
+  const projectItems = safeEmails.filter(
+    (e) => e?.sentiment === 'negative' || e?.requires_reply || e?.sentiment === 'positive'
   );
 
   // Sort: negative first, then by timestamp desc
   const sorted = [...projectItems].sort((a, b) => {
-    const aScore = a.sentiment === 'negative' ? 2 : a.requires_reply ? 1 : 0;
-    const bScore = b.sentiment === 'negative' ? 2 : b.requires_reply ? 1 : 0;
+    const aScore = a?.sentiment === 'negative' ? 2 : a?.requires_reply ? 1 : 0;
+    const bScore = b?.sentiment === 'negative' ? 2 : b?.requires_reply ? 1 : 0;
     if (bScore !== aScore) return bScore - aScore;
-    return new Date(b.received_at ?? b.created_at).getTime() - new Date(a.received_at ?? a.created_at).getTime();
+    
+    const aTime = new Date(a?.received_at ?? a?.created_at ?? 0).getTime();
+    const bTime = new Date(b?.received_at ?? b?.created_at ?? 0).getTime();
+    return bTime - aTime;
   });
 
   return (
@@ -90,7 +105,7 @@ export function ProjectRadar({ emails }: ProjectRadarProps) {
       ) : (
         <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
           {sorted.map((item) => (
-            <ProjectItem key={item.id} email={item} />
+            <ProjectItem key={item?.id || Math.random().toString()} email={item} />
           ))}
         </div>
       )}
