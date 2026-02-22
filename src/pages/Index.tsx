@@ -3,6 +3,7 @@ import { StatusBar } from '@/components/dashboard/StatusBar';
 import { RiskHeatmap } from '@/components/dashboard/RiskHeatmap';
 import { TeamPulse } from '@/components/dashboard/TeamPulse';
 import { DeliveryRisks } from '@/components/dashboard/DeliveryRisks';
+import { ProjectRadar } from '@/components/dashboard/ProjectRadar';
 import { ClientWatch } from '@/components/dashboard/ClientWatch';
 import { NextActions } from '@/components/dashboard/NextActions';
 import { Loader2 } from 'lucide-react';
@@ -40,6 +41,9 @@ const Index = () => {
               <TeamPulse team={team} slackMessages={slackMessages} />
               <DeliveryRisks prs={prs} />
             </div>
+
+            {/* Project Radar - Full Width */}
+            <ProjectRadar prs={prs} />
 
             {/* Two Column Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
