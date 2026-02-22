@@ -15,26 +15,26 @@ const severityConfig = {
   low: { label: 'LOW', dotClass: 'bg-tactical-green', glowClass: '', textClass: 'text-tactical-green', borderClass: 'border-tactical-green/30' },
 };
 
-const riskTypeConfig: Record<string, { icon: typeof Flame; label: string; description: string }> = {
+const riskTypeConfig: Record<string, { icon: typeof Flame; label: string; color: string }> = {
   burnout: { 
     icon: Flame, 
     label: 'Burnout Risk',
-    description: 'Team members working late with negative sentiment'
+    color: 'text-tactical-red'
   },
   delivery: { 
     icon: GitPullRequest, 
     label: 'Delivery Risk',
-    description: 'Stale PRs, missed deadlines'
+    color: 'text-tactical-amber'
   },
   stakeholder: { 
     icon: Users, 
     label: 'Stakeholder Risk',
-    description: 'Client issues, urgent emails'
+    color: 'text-tactical-blue'
   },
   technical_debt: { 
     icon: Wrench, 
     label: 'Tech Debt',
-    description: 'Outdated dependencies, maintenance needs'
+    color: 'text-tactical-green'
   },
 };
 
@@ -49,7 +49,7 @@ function RiskCard({ risk }: { risk: RiskAssessment }) {
   const typeConfig = riskTypeConfig[risk.risk_type] || { 
     icon: AlertTriangle, 
     label: risk.risk_type,
-    description: risk.description || 'Risk detected'
+    color: 'text-muted-foreground'
   };
   const Icon = typeConfig.icon;
 
@@ -73,7 +73,7 @@ function RiskCard({ risk }: { risk: RiskAssessment }) {
       </div>
 
       <div className="flex items-start gap-2.5 mb-1">
-        <Icon className={`h-4 w-4 mt-0.5 flex-shrink-0 ${config.textClass}`} />
+        <Icon className={`h-4 w-4 mt-0.5 flex-shrink-0 ${typeConfig.color}`} />
         <div className="min-w-0">
           <div className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider mb-0.5">
             {typeConfig.label}
@@ -103,7 +103,7 @@ function RiskCard({ risk }: { risk: RiskAssessment }) {
           )}
           <div className="flex items-center gap-3 text-[10px] font-mono text-muted-foreground">
             <span>Detected: {new Date(risk.detected_at).toLocaleDateString()}</span>
-            <span className={`${risk.is_active ? 'text-tactical-amber' : 'text-tactical-green'}`}>
+            <span className={risk.is_active ? 'text-tactical-amber' : 'text-tactical-green'}>
               {risk.is_active ? '● ACTIVE' : '● RESOLVED'}
             </span>
           </div>
@@ -114,18 +114,15 @@ function RiskCard({ risk }: { risk: RiskAssessment }) {
 }
 
 export function RiskHeatmap({ risks }: RiskHeatmapProps) {
-  // Debug log to see what risks are coming in
+  // Log to verify data
   console.log('RiskHeatmap - All risks:', risks);
   console.log('RiskHeatmap - Risk types:', risks.map(r => r.risk_type));
   
   const activeCount = risks.filter(r => r.is_active).length;
   const criticalCount = risks.filter(r => r.severity === 'critical' || r.severity === 'high').length;
 
-  // Sort risks by severity (critical first, then high, medium, low)
-  const sortedRisks = [...risks].sort((a, b) => {
-    const severityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
-    return (severityOrder[a.severity] || 99) - (severityOrder[b.severity] || 99);
-  });
+  // Force show all risks - no filtering!
+  const displayRisks = risks;
 
   return (
     <div className="rounded-lg border border-border bg-card p-5 animate-fade-in-up">
@@ -198,12 +195,12 @@ export function RiskHeatmap({ risks }: RiskHeatmapProps) {
         </div>
       </div>
 
-      {/* Risk cards */}
-      {sortedRisks.length === 0 ? (
+      {/* Risk cards - ALL risks shown */}
+      {displayRisks.length === 0 ? (
         <p className="text-sm text-muted-foreground font-mono py-4 text-center">No risks detected</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {sortedRisks.map(risk => (
+          {displayRisks.map(risk => (
             <RiskCard key={risk.id} risk={risk} />
           ))}
         </div>
