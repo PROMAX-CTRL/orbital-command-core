@@ -1,5 +1,20 @@
-import type { GithubActivity } from '@/types/dashboard';
 import { GitPullRequest, AlertTriangle, Clock, GitMerge, GitBranch } from 'lucide-react';
+
+interface GithubActivity {
+  id: number;
+  repo_name: string;
+  pr_title: string;
+  pr_number: number;
+  author: string;
+  status: string;
+  days_open: number;
+  is_stale: boolean;
+  review_count: number;
+  additions: number;
+  deletions: number;
+  timestamp: string;
+  created_at: string;
+}
 
 interface DeliveryRisksProps {
   prs: GithubActivity[];
@@ -24,31 +39,16 @@ export function DeliveryRisks({ prs }: DeliveryRisksProps) {
   // Ensure prs is an array
   const safePrs = Array.isArray(prs) ? prs : [];
   
-  console.log('All PRs:', safePrs); // This will help debug in browser console
-  
-  // More flexible filtering - check for pull_request in type OR status 'open' with title
-  const openPrs = safePrs.filter(pr => {
-    // Check if it's likely a PR (has title, is open)
-    const isOpen = pr?.status === 'open';
-    const hasTitle = pr?.title && pr.title.length > 0;
-    const isPR = pr?.type === 'pull_request' || pr?.type === 'pr' || (isOpen && hasTitle);
-    
-    return isOpen && isPR;
-  }).sort((a, b) => {
-    const aTime = new Date(a?.created_at || 0).getTime();
-    const bTime = new Date(b?.created_at || 0).getTime();
-    return aTime - bTime;
-  });
+  // Filter for open PRs (status = 'open')
+  const openPrs = safePrs
+    .filter(pr => pr?.status === 'open')
+    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
-  console.log('Filtered open PRs:', openPrs); // Debug log
-
-  const stalePrs = openPrs.filter(pr => getDaysStale(pr?.created_at || '') > 3);
-  const criticalStale = openPrs.filter(pr => getDaysStale(pr?.created_at || '') > 7).length;
-  const mediumStale = openPrs.filter(pr => {
-    const days = getDaysStale(pr?.created_at || '');
-    return days > 3 && days <= 7;
-  }).length;
-  const lowRisk = openPrs.filter(pr => getDaysStale(pr?.created_at || '') <= 3).length;
+  // Calculate metrics
+  const stalePrs = openPrs.filter(pr => pr.days_open > 3);
+  const criticalStale = openPrs.filter(pr => pr.days_open > 7).length;
+  const mediumStale = openPrs.filter(pr => pr.days_open > 3 && pr.days_open <= 7).length;
+  const lowRisk = openPrs.filter(pr => pr.days_open <= 3).length;
 
   return (
     <div className="rounded-lg border border-border bg-card p-5 animate-fade-in-up" style={{ animationDelay: '0.15s' }}>
@@ -87,55 +87,37 @@ export function DeliveryRisks({ prs }: DeliveryRisksProps) {
 
       {/* PR LIST */}
       {openPrs.length === 0 ? (
-        <div className="text-center py-4">
-          <p className="text-sm text-muted-foreground font-mono mb-2">No open PRs</p>
-          <p className="text-xs text-muted-foreground font-mono opacity-60">
-            (Check console for debug info)
-          </p>
-        </div>
+        <p className="text-sm text-muted-foreground font-mono py-4 text-center">No open PRs</p>
       ) : (
         <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
           {openPrs.slice(0, 5).map(pr => {
-            const days = getDaysStale(pr?.created_at || '');
-            const badge = getStaleBadge(days);
+            const badge = getStaleBadge(pr.days_open);
             return (
               <div
-                key={pr?.id || Math.random().toString()}
+                key={pr.id}
                 className="flex items-start gap-3 rounded-md bg-secondary/30 px-3 py-2.5 hover:bg-secondary/50 transition-colors"
               >
-                {pr?.status === 'merged' ? (
-                  <GitMerge className="h-4 w-4 mt-0.5 text-tactical-green flex-shrink-0" />
-                ) : (
-                  <GitBranch className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
-                )}
+                <GitBranch className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm text-foreground truncate font-medium">{pr?.title || 'Untitled PR'}</div>
+                  <div className="text-sm text-foreground truncate font-medium">
+                    {pr.pr_title} (#{pr.pr_number})
+                  </div>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs font-mono text-muted-foreground">@{pr?.author || 'unknown'}</span>
+                    <span className="text-xs font-mono text-muted-foreground">@{pr.author}</span>
                     <span className="text-xs font-mono text-muted-foreground">•</span>
-                    <span className="text-xs font-mono text-muted-foreground truncate">{pr?.repo || 'unknown'}</span>
+                    <span className="text-xs font-mono text-muted-foreground truncate">{pr.repo_name}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   <Clock className="h-3 w-3 text-muted-foreground" />
                   <span className={`text-xs font-mono font-bold px-1.5 py-0.5 rounded ${badge.className}`}>
-                    {badge.text}
+                    {pr.days_open}d
                   </span>
                 </div>
               </div>
             );
           })}
         </div>
-      )}
-      
-      {/* Debug info - remove after fixing */}
-      {openPrs.length === 0 && safePrs.length > 0 && (
-        <details className="mt-4 text-xs text-muted-foreground">
-          <summary>Debug: Show all {safePrs.length} items</summary>
-          <pre className="mt-2 p-2 bg-secondary/50 rounded max-h-40 overflow-auto">
-            {JSON.stringify(safePrs.slice(0, 3), null, 2)}
-          </pre>
-        </details>
       )}
     </div>
   );
