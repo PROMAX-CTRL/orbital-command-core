@@ -18,9 +18,9 @@ function getStaleBadge(days: number) {
 export function DeliveryRisks({ prs }: DeliveryRisksProps) {
   const openPrs = prs
     .filter(pr => pr.type === 'pull_request' && pr.status === 'open')
-    .sort((a, b) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime());
+    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
-  const stalePrs = openPrs.filter(pr => getDaysStale(pr.updated_at) > 3);
+  const stalePrs = openPrs.filter(pr => getDaysStale(pr.created_at) > 3);
 
   return (
     <div className="rounded-lg border border-border bg-card p-5 animate-fade-in-up" style={{ animationDelay: '0.15s' }}>
@@ -42,7 +42,7 @@ export function DeliveryRisks({ prs }: DeliveryRisksProps) {
       ) : (
         <div className="space-y-2 max-h-64 overflow-y-auto">
           {openPrs.slice(0, 8).map(pr => {
-            const days = getDaysStale(pr.updated_at);
+            const days = getDaysStale(pr.created_at);
             const badge = getStaleBadge(days);
             return (
               <div

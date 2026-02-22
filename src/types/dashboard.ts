@@ -63,8 +63,13 @@ export interface Email {
   body?: string;
   priority: 'urgent' | 'high' | 'normal' | 'low';
   client_name?: string;
-  received_at: string;
+  received_at?: string;
   is_read: boolean;
+  urgency_score?: number;
+  sentiment?: string;
+  sentiment_score?: number;
+  requires_reply?: boolean;
+  created_at: string;
 }
 
 export interface NextAction {
