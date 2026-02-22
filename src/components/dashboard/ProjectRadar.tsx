@@ -16,9 +16,9 @@ function timeAgo(dateStr: string) {
   if (!dateStr) return 'unknown';
   try {
     const hours = Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60));
-    if (hours < 1) return '<1h';
-    if (hours < 24) return `${hours}h`;
-    return `${Math.floor(hours / 24)}d`;
+    if (hours < 1) return '<1h ago';
+    if (hours < 24) return `${hours}h ago`;
+    return `${Math.floor(hours / 24)}d ago`;
   } catch {
     return 'unknown';
   }
@@ -34,33 +34,33 @@ function ProjectItem({ email }: { email: Email }) {
     (email.from_address ? email.from_address.split('@')[0] : 'Unknown');
 
   return (
-    <div className="rounded-md border border-border bg-secondary/30 px-3 py-2 flex items-center gap-2 hover:bg-secondary/50 transition-colors">
+    <div className="rounded-md border border-border bg-secondary/30 px-4 py-3 flex items-center gap-3 hover:bg-secondary/50 transition-colors">
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1">
-          <span className="text-xs font-medium text-foreground truncate">{email.subject || 'No subject'}</span>
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-semibold text-foreground">{email.subject || 'No subject'}</span>
+          <span className="text-xs font-mono text-muted-foreground ml-2">{time}</span>
         </div>
-        <div className="flex items-center gap-1 mt-0.5">
+        <div className="flex items-center gap-2 mt-2 flex-wrap">
           {isNegative && (
-            <Badge variant="outline" className="text-[8px] font-mono h-4 border-destructive/40 bg-destructive/15 text-destructive px-1 py-0">
-              <AlertCircle className="h-2 w-2 mr-0.5" />
+            <Badge variant="outline" className="text-xs font-mono border-destructive/40 bg-destructive/15 text-destructive px-2 py-0.5">
+              <AlertCircle className="h-3 w-3 mr-1" />
               negative
             </Badge>
           )}
           {isPositive && (
-            <Badge variant="outline" className="text-[8px] font-mono h-4 border-primary/40 bg-primary/15 text-primary px-1 py-0">
-              <CheckCircle className="h-2 w-2 mr-0.5" />
+            <Badge variant="outline" className="text-xs font-mono border-primary/40 bg-primary/15 text-primary px-2 py-0.5">
+              <CheckCircle className="h-3 w-3 mr-1" />
               positive
             </Badge>
           )}
           {needsReply && (
-            <Badge variant="outline" className="text-[8px] font-mono h-4 border-yellow-500/40 bg-yellow-500/15 text-yellow-400 px-1 py-0">
-              reply
+            <Badge variant="outline" className="text-xs font-mono border-yellow-500/40 bg-yellow-500/15 text-yellow-400 px-2 py-0.5">
+              reply needed
             </Badge>
           )}
-          <span className="text-[9px] font-mono text-muted-foreground ml-auto">{time}</span>
-        </div>
-        <div className="text-[9px] font-mono text-muted-foreground mt-0.5">
-          {senderName}
+          <span className="text-xs font-mono text-muted-foreground ml-auto">
+            {senderName}
+          </span>
         </div>
       </div>
     </div>
@@ -85,24 +85,24 @@ export function ProjectRadar({ emails }: ProjectRadarProps) {
   });
 
   return (
-    <div className="rounded-lg border border-border bg-card p-4 animate-fade-in-up h-full flex flex-col" style={{ animationDelay: '0.2s' }}>
-      {/* Header - more compact */}
-      <div className="flex items-center gap-1.5 mb-3 flex-shrink-0">
-        <Radar className="h-3.5 w-3.5 text-primary" />
-        <h2 className="text-xs font-mono font-semibold uppercase tracking-wider text-foreground">
+    <div className="rounded-lg border border-border bg-card p-5 animate-fade-in-up h-full flex flex-col" style={{ animationDelay: '0.2s' }}>
+      {/* Header */}
+      <div className="flex items-center gap-2 mb-4 flex-shrink-0">
+        <Radar className="h-5 w-5 text-primary" />
+        <h2 className="text-sm font-mono font-semibold uppercase tracking-wider text-foreground">
           Project Radar
         </h2>
         
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <button className="h-4 w-4 rounded-full bg-secondary/50 flex items-center justify-center hover:bg-secondary transition-colors">
-                <Info className="h-2.5 w-2.5 text-muted-foreground" />
+              <button className="h-5 w-5 rounded-full bg-secondary/50 flex items-center justify-center hover:bg-secondary transition-colors">
+                <Info className="h-3 w-3 text-muted-foreground" />
               </button>
             </TooltipTrigger>
-            <TooltipContent side="right" className="max-w-xs p-2">
-              <p className="text-[10px] font-medium mb-1">🎯 Project Radar tracks:</p>
-              <ul className="text-[10px] space-y-1 text-muted-foreground">
+            <TooltipContent side="right" className="max-w-xs p-3">
+              <p className="text-xs font-medium mb-2">🎯 Project Radar tracks:</p>
+              <ul className="text-xs space-y-1.5 text-muted-foreground">
                 <li><span className="text-destructive">🔴 negative</span> = client issues</li>
                 <li><span className="text-yellow-400">🟡 reply</span> = action needed</li>
                 <li><span className="text-primary">🟢 positive</span> = good news</li>
@@ -111,20 +111,20 @@ export function ProjectRadar({ emails }: ProjectRadarProps) {
           </Tooltip>
         </TooltipProvider>
 
-        <span className="ml-auto text-[10px] font-mono text-muted-foreground">
-          {sorted.length}
+        <span className="ml-auto text-xs font-mono text-muted-foreground">
+          {sorted.length} flagged
         </span>
       </div>
 
-      {/* Content - compact cards */}
+      {/* Content - scrollable with proper sizing */}
       <div className="flex-1 min-h-0">
         {sorted.length === 0 ? (
-          <div className="flex items-center justify-center h-10 text-xs text-muted-foreground font-mono">
+          <div className="flex items-center justify-center h-32 text-sm text-muted-foreground font-mono">
             No flagged items
           </div>
         ) : (
-          <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-1">
-            {sorted.slice(0, 8).map((item) => (
+          <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+            {sorted.slice(0, 10).map((item) => (
               <ProjectItem key={item?.id || Math.random().toString()} email={item} />
             ))}
           </div>
