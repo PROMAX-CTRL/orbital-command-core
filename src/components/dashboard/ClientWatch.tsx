@@ -88,20 +88,13 @@ function ClientEmailRow({ email }: { email: Email }) {
   );
 }
 
-export function ClientWatch({ emails }: ClientWatchProps) {
-  const safeEmails = Array.isArray(emails) ? emails : [];
-  
-  // FILTER 1: Only client emails (external domains or has client_name)
-  const clientEmails = safeEmails.filter(e => {
-    // If it has client_name, definitely a client
-    if (e.client_name) return true;
-    
-    // Check if it's from an external domain (not company.com or internal)
-    const fromAddr = e.from_address || '';
-    const isExternal = !fromAddr.includes('@company.com') && 
-                       !fromAddr.includes('@internal') &&
-                       !fromAddr.includes('@ourcompany') &&
-                       fromAddr.includes('@'); // Has an @ symbol (valid email)
+// Replace the client email filtering with:
+const clientEmails = safeEmails.filter(e => {
+  // Show ALL emails that are from external domains
+  const fromAddr = e.from_address || '';
+  // If it has client_name OR doesn't look like internal email
+  return e.client_name || !fromAddr.includes('@company.com');
+});
     
     return isExternal;
   });
