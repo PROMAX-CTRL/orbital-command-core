@@ -20,8 +20,8 @@ export function useDashboardData() {
         const [risksRes, teamRes, ghRes, emailsRes, slackRes] = await Promise.all([
           supabase.from('risk_assessments').select('*').order('created_at', { ascending: false }),
           supabase.from('team_members').select('*'),
-          supabase.from('github_activity').select('*').order('updated_at', { ascending: false }),
-          supabase.from('emails').select('*').order('received_at', { ascending: false }),
+          supabase.from('github_activity').select('*').order('created_at', { ascending: false }),
+          supabase.from('emails').select('*').order('created_at', { ascending: false }),
           supabase.from('slack_messages').select('*').order('created_at', { ascending: false }),
         ]);
 
@@ -70,8 +70,8 @@ export function useDashboardData() {
           const stalePrs = (ghRes.data as GithubActivity[])
             .filter(g => g.type === 'pull_request' && g.status === 'open')
             .filter(g => {
-              const updated = new Date(g.updated_at);
-              const daysStale = (Date.now() - updated.getTime()) / (1000 * 60 * 60 * 24);
+              const created = new Date(g.created_at);
+              const daysStale = (Date.now() - created.getTime()) / (1000 * 60 * 60 * 24);
               return daysStale > 3;
             })
             .slice(0, 2);
@@ -83,7 +83,7 @@ export function useDashboardData() {
               description: `PR has been open without updates. Consider reviewing or reassigning.`,
               priority: 'medium',
               source: 'github',
-              created_at: pr.updated_at,
+              created_at: pr.created_at,
             });
           });
         }
