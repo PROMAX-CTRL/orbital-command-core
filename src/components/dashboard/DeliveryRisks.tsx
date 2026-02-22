@@ -27,24 +27,43 @@ interface DeliveryRisksProps {
 }
 
 function getStaleBadge(days: number) {
-  if (days > 7) return { text: `${days}d`, className: 'bg-tactical-red/20 text-tactical-red' };
-  if (days > 3) return { text: `${days}d`, className: 'bg-tactical-amber/20 text-tactical-amber' };
-  return { text: `${days}d`, className: 'bg-tactical-green/20 text-tactical-green' };
+  if (days > 7) return { 
+    text: `${days}d`, 
+    className: 'bg-tactical-red/20 text-tactical-red',
+    label: 'CRITICAL'
+  };
+  if (days > 3) return { 
+    text: `${days}d`, 
+    className: 'bg-tactical-amber/20 text-tactical-amber',
+    label: 'STALE'
+  };
+  return { 
+    text: `${days}d`, 
+    className: 'bg-tactical-green/20 text-tactical-green',
+    label: 'HEALTHY'
+  };
 }
 
 export function DeliveryRisks({ prs }: DeliveryRisksProps) {
   const safePrs = Array.isArray(prs) ? prs : [];
   
+  // Filter for open PRs
   const openPrs = safePrs
     .filter(pr => pr?.status === 'open')
-    .sort((a, b) => a.days_open - b.days_open);
+    .sort((a, b) => b.days_open - a.days_open); // Most stale first
 
-  const stalePrs = openPrs.filter(pr => pr.days_open > 3);
+  // Calculate metrics with correct logic
+  const criticalStale = openPrs.filter(pr => pr.days_open > 7).length;
+  const stalePrs = openPrs.filter(pr => pr.days_open > 3).length; // This includes critical + medium
   const mediumStale = openPrs.filter(pr => pr.days_open > 3 && pr.days_open <= 7).length;
   const lowRisk = openPrs.filter(pr => pr.days_open <= 3).length;
 
+  // Total should equal openPrs.length
+  const totalPRs = openPrs.length;
+  const calculatedTotal = criticalStale + mediumStale + lowRisk;
+
   return (
-    <div className="rounded-lg border border-border bg-card p-5 animate-fade-in-up h-full flex flex-col" style={{ animationDelay: '0.15s' }}>
+    <div className="rounded-lg border border-border bg-card p-5 animate-fade-in-up h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center gap-2 mb-4 flex-shrink-0">
         <GitPullRequest className="h-5 w-5 text-tactical-amber" />
@@ -62,31 +81,34 @@ export function DeliveryRisks({ prs }: DeliveryRisksProps) {
             <TooltipContent side="right" className="max-w-xs p-3">
               <p className="text-xs font-medium mb-2">🚧 Delivery Risk Levels:</p>
               <ul className="text-xs space-y-1.5 text-muted-foreground">
-                <li><span className="text-tactical-red">🔴 STALE</span> = &gt;7 days</li>
-                <li><span className="text-tactical-amber">🟡 MEDIUM</span> = 4-7 days</li>
-                <li><span className="text-tactical-green">🟢 LOW</span> = ≤3 days</li>
+                <li><span className="text-tactical-red">🔴 CRITICAL</span> = &gt;7 days</li>
+                <li><span className="text-tactical-amber">🟡 STALE</span> = 4-7 days</li>
+                <li><span className="text-tactical-green">🟢 HEALTHY</span> = ≤3 days</li>
               </ul>
+              <p className="text-xs mt-2 pt-2 border-t border-border">
+                Total PRs: {totalPRs} (Stale: {stalePrs})
+              </p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
 
-        {stalePrs.length > 0 && (
+        {stalePrs > 0 && (
           <div className="ml-auto flex items-center gap-1">
             <AlertTriangle className="h-4 w-4 text-tactical-amber" />
-            <span className="text-xs font-mono font-bold text-tactical-amber">{stalePrs.length} stale</span>
+            <span className="text-xs font-mono font-bold text-tactical-amber">{stalePrs} stale</span>
           </div>
         )}
       </div>
 
-      {/* METRIC CARDS - properly sized */}
+      {/* METRIC CARDS */}
       <div className="grid grid-cols-4 gap-3 mb-4 flex-shrink-0">
         <div className="bg-secondary/30 rounded-md p-3 text-center">
           <div className="text-xs font-mono text-muted-foreground uppercase">OPEN</div>
-          <div className="text-2xl font-bold text-foreground">{openPrs.length}</div>
+          <div className="text-2xl font-bold text-foreground">{totalPRs}</div>
         </div>
         <div className="bg-secondary/30 rounded-md p-3 text-center">
           <div className="text-xs font-mono text-muted-foreground uppercase">STALE</div>
-          <div className="text-2xl font-bold text-tactical-amber">{stalePrs.length}</div>
+          <div className="text-2xl font-bold text-tactical-amber">{stalePrs}</div>
         </div>
         <div className="bg-secondary/30 rounded-md p-3 text-center">
           <div className="text-xs font-mono text-muted-foreground uppercase">MEDIUM</div>
@@ -98,38 +120,47 @@ export function DeliveryRisks({ prs }: DeliveryRisksProps) {
         </div>
       </div>
 
-      {/* PR LIST - takes remaining space */}
+      {/* PR LIST */}
       <div className="flex-1 min-h-0">
         {openPrs.length === 0 ? (
-          <div className="flex items-center justify-center h-24 text-sm text-muted-foreground font-mono">
+          <div className="flex items-center justify-center h-32 text-sm text-muted-foreground font-mono">
             No open PRs
           </div>
         ) : (
-          <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
-            {openPrs.slice(0, 8).map(pr => {
+          <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+            {openPrs.map(pr => {
               const badge = getStaleBadge(pr.days_open);
               return (
                 <div
                   key={pr.id}
-                  className="flex items-center gap-3 rounded-md bg-secondary/30 px-4 py-3 hover:bg-secondary/50 transition-colors"
+                  className="flex items-start gap-3 rounded-md bg-secondary/30 p-4 hover:bg-secondary/50 transition-colors border border-border/50"
                 >
-                  <GitBranch className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                  <GitBranch className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-2">
                       <div className="text-sm font-medium text-foreground truncate">
                         {pr.pr_title} <span className="text-muted-foreground">#{pr.pr_number}</span>
                       </div>
-                      <div className="flex items-center gap-1 ml-2">
+                      <div className="flex items-center gap-2 flex-shrink-0">
                         <Clock className="h-3 w-3 text-muted-foreground" />
-                        <span className={`text-xs font-mono font-bold px-1.5 py-0.5 rounded ${badge.className}`}>
+                        <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${badge.className}`}>
                           {pr.days_open}d
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs font-mono text-muted-foreground">@{pr.author}</span>
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                      <span className="text-xs font-mono text-muted-foreground bg-secondary/50 px-2 py-0.5 rounded">
+                        @{pr.author}
+                      </span>
                       <span className="text-xs text-muted-foreground">·</span>
-                      <span className="text-xs font-mono text-muted-foreground truncate">{pr.repo_name}</span>
+                      <span className="text-xs font-mono text-muted-foreground truncate">
+                        {pr.repo_name}
+                      </span>
+                      {pr.days_open > 3 && (
+                        <span className={`text-xs font-mono font-bold ml-auto ${badge.className}`}>
+                          {badge.label}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
