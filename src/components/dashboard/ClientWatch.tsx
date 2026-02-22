@@ -30,13 +30,6 @@ function ClientEmailRow({ email }: { email: Email }) {
   const [expanded, setExpanded] = useState(false);
   const urgency = getUrgencyColor(email.urgency_score ?? 0);
   const isNegative = email.sentiment === 'negative' || (email.sentiment_score != null && email.sentiment_score < 0.4);
-  
-  // Only show if it's client-facing (has client_name or external domain)
-  const isClient = email.client_name || 
-                  (email.from_address && !email.from_address.includes('@company.com') && 
-                   !email.from_address.includes('@internal'));
-
-  if (!isClient) return null;
 
   return (
     <button
@@ -62,9 +55,8 @@ function ClientEmailRow({ email }: { email: Email }) {
           </div>
           <div className="flex items-center gap-2 mt-1">
             <span className="text-sm font-mono text-muted-foreground truncate">
-              {email.client_name || email.from_address}
+              {email.client_name || email.from_address || 'Unknown Client'}
             </span>
-            <ExternalLink className="h-3 w-3 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">•</span>
             <span className="text-sm font-mono text-muted-foreground">
               {timeAgo(email.received_at || email.created_at)}
@@ -99,13 +91,22 @@ function ClientEmailRow({ email }: { email: Email }) {
 export function ClientWatch({ emails }: ClientWatchProps) {
   const safeEmails = Array.isArray(emails) ? emails : [];
   
-  // Only client-facing emails
-  const clientEmails = safeEmails.filter(e => 
-    e?.client_name || 
-    (e?.from_address && !e.from_address.includes('@company.com') && 
-     !e.from_address.includes('@internal'))
-  );
+  // FILTER 1: Only client emails (external domains or has client_name)
+  const clientEmails = safeEmails.filter(e => {
+    // If it has client_name, definitely a client
+    if (e.client_name) return true;
+    
+    // Check if it's from an external domain (not company.com or internal)
+    const fromAddr = e.from_address || '';
+    const isExternal = !fromAddr.includes('@company.com') && 
+                       !fromAddr.includes('@internal') &&
+                       !fromAddr.includes('@ourcompany') &&
+                       fromAddr.includes('@'); // Has an @ symbol (valid email)
+    
+    return isExternal;
+  });
 
+  // FILTER 2: Flag important ones (high urgency, negative, needs reply)
   const flagged = clientEmails.filter(e => {
     const highUrgency = (e.urgency_score ?? 0) > 7;
     const negative = e.sentiment === 'negative' || (e.sentiment_score != null && e.sentiment_score < 0.4);
@@ -113,11 +114,20 @@ export function ClientWatch({ emails }: ClientWatchProps) {
     return highUrgency || negative || needsReply;
   });
 
+  // Sort: flagged first, then by date
+  const sorted = [...flagged, ...clientEmails.filter(e => !flagged.includes(e))].sort((a, b) => {
+    // If one is flagged and other isn't, flagged comes first
+    const aFlagged = flagged.includes(a);
+    const bFlagged = flagged.includes(b);
+    if (aFlagged && !bFlagged) return -1;
+    if (!aFlagged && bFlagged) return 1;
+    
+    // Otherwise sort by date (newest first)
+    return new Date(b.received_at || b.created_at).getTime() - new Date(a.received_at || a.created_at).getTime();
+  });
+
   const criticalCount = flagged.filter(e => (e.urgency_score ?? 0) >= 9).length;
   const replyCount = flagged.filter(e => e.requires_reply).length;
-
-  // Show flagged first
-  const sorted = [...flagged, ...clientEmails.filter(e => !flagged.includes(e))];
 
   return (
     <div className="rounded-lg border border-border bg-card p-5 animate-fade-in-up h-full flex flex-col" style={{ animationDelay: '0.2s' }}>
@@ -135,12 +145,12 @@ export function ClientWatch({ emails }: ClientWatchProps) {
               </button>
             </TooltipTrigger>
             <TooltipContent side="right" className="max-w-xs p-3">
-              <p className="text-xs font-medium mb-2">📨 Client Watch monitors:</p>
+              <p className="text-xs font-medium mb-2">📨 Client Watch shows:</p>
               <ul className="text-xs space-y-1.5 text-muted-foreground">
-                <li>🔴 External client emails only</li>
-                <li>⚠️ High urgency (7-10)</li>
-                <li>😠 Negative sentiment detection</li>
-                <li>📝 Replies needed from your team</li>
+                <li>• External client emails only</li>
+                <li>• 🔴 Critical = urgency 9+</li>
+                <li>• 🟡 Reply = needs response</li>
+                <li>• 😠 Negative sentiment flagged</li>
               </ul>
             </TooltipContent>
           </Tooltip>
@@ -159,7 +169,7 @@ export function ClientWatch({ emails }: ClientWatchProps) {
             </span>
           )}
           <span className="text-sm font-mono text-muted-foreground">
-            {clientEmails.length} total
+            {clientEmails.length} clients
           </span>
         </div>
       </div>
@@ -171,7 +181,7 @@ export function ClientWatch({ emails }: ClientWatchProps) {
           </div>
         ) : (
           <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
-            {sorted.slice(0, 10).map(email => (
+            {sorted.map(email => (
               <ClientEmailRow key={email.id} email={email} />
             ))}
           </div>
