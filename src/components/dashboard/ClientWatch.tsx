@@ -1,7 +1,13 @@
 import { useState } from 'react';
 import type { Email } from '@/types/dashboard';
-import { Mail, AlertCircle, Reply, ChevronDown, ChevronUp } from 'lucide-react';
+import { Mail, AlertCircle, Reply, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface ClientWatchProps {
   emails: Email[];
@@ -82,7 +88,6 @@ function EmailRow({ email }: { email: Email }) {
 }
 
 export function ClientWatch({ emails }: ClientWatchProps) {
-  // Filter: urgency > 7, negative sentiment, or requires reply
   const flagged = emails.filter(e => {
     const highUrgency = (e.urgency_score ?? 0) > 7;
     const negative = e.sentiment === 'negative' || (e.sentiment_score != null && e.sentiment_score < 0.4);
@@ -93,17 +98,49 @@ export function ClientWatch({ emails }: ClientWatchProps) {
   const criticalCount = flagged.filter(e => (e.urgency_score ?? 0) >= 9).length;
   const replyCount = flagged.filter(e => e.requires_reply).length;
 
-  // Show flagged first, then remaining
   const remaining = emails.filter(e => !flagged.includes(e));
   const sorted = [...flagged, ...remaining];
 
   return (
-    <div className="rounded-lg border border-border bg-card p-5 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-      <div className="flex items-center gap-2 mb-4">
+    <div className="rounded-lg border border-border bg-card p-5 animate-fade-in-up h-full flex flex-col" style={{ animationDelay: '0.2s' }}>
+      {/* Header with tooltip */}
+      <div className="flex items-center gap-2 mb-4 flex-shrink-0">
         <Mail className="h-4 w-4 text-tactical-red" />
         <h2 className="text-sm font-mono font-semibold uppercase tracking-wider text-foreground">
           Client Watch
         </h2>
+        
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button className="h-5 w-5 rounded-full bg-secondary/50 flex items-center justify-center hover:bg-secondary transition-colors">
+                <Info className="h-3 w-3 text-muted-foreground" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="max-w-xs p-3">
+              <p className="text-xs font-medium mb-2">📨 Client Watch monitors:</p>
+              <ul className="text-xs space-y-1.5 text-muted-foreground">
+                <li className="flex items-start gap-2">
+                  <span className="text-tactical-red font-bold">🔴</span>
+                  <span><span className="font-bold text-foreground">Urgency score:</span> 7-10 = high priority</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-destructive font-bold">negative</span>
+                  <span> tag = client frustration or issues</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-tactical-amber font-bold">reply</span>
+                  <span> tag = response needed from your team</span>
+                </li>
+                <li className="flex items-start gap-2 mt-1 pt-1 border-t border-border">
+                  <span className="text-tactical-red font-bold">{criticalCount} critical</span>
+                  <span> = urgency score 9+</span>
+                </li>
+              </ul>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
         <div className="ml-auto flex items-center gap-3">
           {criticalCount > 0 && (
             <div className="flex items-center gap-1 text-tactical-red">
@@ -122,15 +159,20 @@ export function ClientWatch({ emails }: ClientWatchProps) {
         </div>
       </div>
 
-      {sorted.length === 0 ? (
-        <p className="text-sm text-muted-foreground font-mono py-4 text-center">No emails tracked</p>
-      ) : (
-        <div className="space-y-2 max-h-72 overflow-y-auto">
-          {sorted.slice(0, 10).map(email => (
-            <EmailRow key={email.id} email={email} />
-          ))}
-        </div>
-      )}
+      {/* Content - scrollable if needed */}
+      <div className="flex-1 min-h-0">
+        {sorted.length === 0 ? (
+          <div className="flex items-center justify-center h-20 text-sm text-muted-foreground font-mono">
+            No emails tracked
+          </div>
+        ) : (
+          <div className="space-y-2 max-h-[280px] overflow-y-auto">
+            {sorted.slice(0, 10).map(email => (
+              <EmailRow key={email.id} email={email} />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
