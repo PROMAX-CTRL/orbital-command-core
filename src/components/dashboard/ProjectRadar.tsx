@@ -1,5 +1,5 @@
-import type { Email } from '@/types/dashboard';
-import { Radar, AlertCircle, CheckCircle, Clock, Info } from 'lucide-react';
+import type { Email, GithubActivity } from '@/types/dashboard';
+import { Radar, AlertCircle, CheckCircle, Clock, Info, GitPullRequest, Bug } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Tooltip,
@@ -10,6 +10,7 @@ import {
 
 interface ProjectRadarProps {
   emails: Email[];
+  github?: GithubActivity[]; // Add GitHub data
 }
 
 function timeAgo(dateStr: string) {
@@ -24,69 +25,104 @@ function timeAgo(dateStr: string) {
   }
 }
 
-function ProjectItem({ email }: { email: Email }) {
-  const isNegative = email.sentiment === 'negative';
-  const isPositive = email.sentiment === 'positive';
-  const needsReply = email.requires_reply;
-  const time = timeAgo(email.received_at ?? email.created_at);
+// Project item from GitHub
+function GithubItem({ pr }: { pr: any }) {
+  const time = timeAgo(pr.created_at);
+  const isStale = pr.days_open > 3;
   
-  const senderName = email.client_name || 
-    (email.from_address ? email.from_address.split('@')[0] : 'Unknown');
-
   return (
-    <div className="rounded-md border border-border bg-secondary/30 px-4 py-3 flex items-center gap-3 hover:bg-secondary/50 transition-colors">
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-semibold text-foreground">{email.subject || 'No subject'}</span>
-          <span className="text-xs font-mono text-muted-foreground ml-2">{time}</span>
+    <div className="rounded-md border border-border bg-secondary/30 px-4 py-3 hover:bg-secondary/50 transition-colors">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <GitPullRequest className="h-4 w-4 text-tactical-blue" />
+          <span className="text-sm font-semibold text-foreground">{pr.pr_title}</span>
         </div>
-        <div className="flex items-center gap-2 mt-2 flex-wrap">
-          {isNegative && (
-            <Badge variant="outline" className="text-xs font-mono border-destructive/40 bg-destructive/15 text-destructive px-2 py-0.5">
-              <AlertCircle className="h-3 w-3 mr-1" />
-              negative
-            </Badge>
-          )}
-          {isPositive && (
-            <Badge variant="outline" className="text-xs font-mono border-primary/40 bg-primary/15 text-primary px-2 py-0.5">
-              <CheckCircle className="h-3 w-3 mr-1" />
-              positive
-            </Badge>
-          )}
-          {needsReply && (
-            <Badge variant="outline" className="text-xs font-mono border-yellow-500/40 bg-yellow-500/15 text-yellow-400 px-2 py-0.5">
-              reply needed
-            </Badge>
-          )}
-          <span className="text-xs font-mono text-muted-foreground ml-auto">
-            {senderName}
-          </span>
-        </div>
+        <span className="text-xs font-mono text-muted-foreground">{time}</span>
+      </div>
+      <div className="flex items-center gap-2 mt-2">
+        <Badge variant="outline" className="text-xs font-mono bg-secondary/50">
+          #{pr.pr_number}
+        </Badge>
+        <span className="text-xs font-mono text-muted-foreground">@{pr.author}</span>
+        <span className="text-xs font-mono text-muted-foreground">·</span>
+        <span className="text-xs font-mono text-muted-foreground">{pr.repo_name}</span>
+        {isStale && (
+          <Badge variant="outline" className="text-xs font-mono border-tactical-amber/40 bg-tactical-amber/15 text-tactical-amber ml-auto">
+            stale
+          </Badge>
+        )}
       </div>
     </div>
   );
 }
 
-export function ProjectRadar({ emails }: ProjectRadarProps) {
-  const safeEmails = Array.isArray(emails) ? emails : [];
+// Email item (only technical/ project-related)
+function EmailProjectItem({ email }: { email: Email }) {
+  const isNegative = email.sentiment === 'negative';
+  const isPositive = email.sentiment === 'positive';
+  const needsReply = email.requires_reply;
+  const time = timeAgo(email.received_at ?? email.created_at);
   
-  const projectItems = safeEmails.filter(
-    (e) => e?.sentiment === 'negative' || e?.requires_reply || e?.sentiment === 'positive'
+  // Only show if it's project-related (contains keywords)
+  const isProjectRelated = email.subject?.toLowerCase().includes('pr') || 
+                          email.subject?.toLowerCase().includes('review') ||
+                          email.subject?.toLowerCase().includes('deploy') ||
+                          email.subject?.toLowerCase().includes('build') ||
+                          email.subject?.toLowerCase().includes('release');
+
+  if (!isProjectRelated) return null;
+
+  return (
+    <div className="rounded-md border border-border bg-secondary/30 px-4 py-3 hover:bg-secondary/50 transition-colors">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-semibold text-foreground">{email.subject}</span>
+        <span className="text-xs font-mono text-muted-foreground">{time}</span>
+      </div>
+      <div className="flex items-center gap-2 mt-2 flex-wrap">
+        {isNegative && (
+          <Badge variant="outline" className="text-xs font-mono border-destructive/40 bg-destructive/15 text-destructive">
+            <AlertCircle className="h-3 w-3 mr-1" />
+            negative
+          </Badge>
+        )}
+        {isPositive && (
+          <Badge variant="outline" className="text-xs font-mono border-primary/40 bg-primary/15 text-primary">
+            <CheckCircle className="h-3 w-3 mr-1" />
+            positive
+          </Badge>
+        )}
+        {needsReply && (
+          <Badge variant="outline" className="text-xs font-mono border-yellow-500/40 bg-yellow-500/15 text-yellow-400">
+            reply needed
+          </Badge>
+        )}
+        <span className="text-xs font-mono text-muted-foreground ml-auto">
+          {email.client_name || email.from_address?.split('@')[0]}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+export function ProjectRadar({ emails, github = [] }: ProjectRadarProps) {
+  // Get project-related emails
+  const projectEmails = (Array.isArray(emails) ? emails : []).filter(e => 
+    e?.subject?.toLowerCase().includes('pr') || 
+    e?.subject?.toLowerCase().includes('review') ||
+    e?.subject?.toLowerCase().includes('deploy') ||
+    e?.subject?.toLowerCase().includes('build') ||
+    e?.subject?.toLowerCase().includes('release')
   );
 
-  const sorted = [...projectItems].sort((a, b) => {
-    const aScore = a?.sentiment === 'negative' ? 2 : a?.requires_reply ? 1 : 0;
-    const bScore = b?.sentiment === 'negative' ? 2 : b?.requires_reply ? 1 : 0;
-    if (bScore !== aScore) return bScore - aScore;
-    
-    const aTime = new Date(a?.received_at ?? a?.created_at ?? 0).getTime();
-    const bTime = new Date(b?.received_at ?? b?.created_at ?? 0).getTime();
-    return bTime - aTime;
-  });
+  // Get GitHub PRs
+  const projectPRs = (Array.isArray(github) ? github : [])
+    .filter(pr => pr?.status === 'open')
+    .slice(0, 5);
+
+  const totalItems = projectPRs.length + projectEmails.length;
 
   return (
     <div className="rounded-lg border border-border bg-card p-5 animate-fade-in-up h-full flex flex-col" style={{ animationDelay: '0.2s' }}>
-      {/* Header */}
       <div className="flex items-center gap-2 mb-4 flex-shrink-0">
         <Radar className="h-5 w-5 text-primary" />
         <h2 className="text-sm font-mono font-semibold uppercase tracking-wider text-foreground">
@@ -103,29 +139,34 @@ export function ProjectRadar({ emails }: ProjectRadarProps) {
             <TooltipContent side="right" className="max-w-xs p-3">
               <p className="text-xs font-medium mb-2">🎯 Project Radar tracks:</p>
               <ul className="text-xs space-y-1.5 text-muted-foreground">
-                <li><span className="text-destructive">🔴 negative</span> = client issues</li>
-                <li><span className="text-yellow-400">🟡 reply</span> = action needed</li>
-                <li><span className="text-primary">🟢 positive</span> = good news</li>
+                <li><GitPullRequest className="h-3 w-3 inline mr-1" /> Open PRs needing review</li>
+                <li><AlertCircle className="h-3 w-3 inline mr-1" /> Build/deployment issues</li>
+                <li><CheckCircle className="h-3 w-3 inline mr-1" /> Code review requests</li>
+                <li className="mt-1 pt-1 border-t border-border">Technical emails only (no client comms)</li>
               </ul>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
 
         <span className="ml-auto text-xs font-mono text-muted-foreground">
-          {sorted.length} flagged
+          {totalItems} items
         </span>
       </div>
 
-      {/* Content - scrollable with proper sizing */}
       <div className="flex-1 min-h-0">
-        {sorted.length === 0 ? (
+        {totalItems === 0 ? (
           <div className="flex items-center justify-center h-32 text-sm text-muted-foreground font-mono">
-            No flagged items
+            No project activity
           </div>
         ) : (
           <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
-            {sorted.slice(0, 10).map((item) => (
-              <ProjectItem key={item?.id || Math.random().toString()} email={item} />
+            {/* Show GitHub PRs first */}
+            {projectPRs.map(pr => (
+              <GithubItem key={pr.id} pr={pr} />
+            ))}
+            {/* Then show project emails */}
+            {projectEmails.slice(0, 5).map(email => (
+              <EmailProjectItem key={email.id} email={email} />
             ))}
           </div>
         )}
