@@ -1,5 +1,5 @@
 import type { Email, GithubActivity } from '@/types/dashboard';
-import { Radar, AlertCircle, CheckCircle, Clock, Info, GitPullRequest, Bug } from 'lucide-react';
+import { Radar, AlertCircle, CheckCircle, Clock, Info, GitPullRequest, Bug, GitBranch } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Tooltip,
@@ -10,7 +10,7 @@ import {
 
 interface ProjectRadarProps {
   emails: Email[];
-  github?: GithubActivity[]; // Add GitHub data
+  github?: GithubActivity[];
 }
 
 function timeAgo(dateStr: string) {
@@ -25,8 +25,8 @@ function timeAgo(dateStr: string) {
   }
 }
 
-// Project item from GitHub
-function GithubItem({ pr }: { pr: any }) {
+// GitHub PR Item
+function GithubPRItem({ pr }: { pr: any }) {
   const time = timeAgo(pr.created_at);
   const isStale = pr.days_open > 3;
   
@@ -39,7 +39,7 @@ function GithubItem({ pr }: { pr: any }) {
         </div>
         <span className="text-xs font-mono text-muted-foreground">{time}</span>
       </div>
-      <div className="flex items-center gap-2 mt-2">
+      <div className="flex items-center gap-2 mt-2 flex-wrap">
         <Badge variant="outline" className="text-xs font-mono bg-secondary/50">
           #{pr.pr_number}
         </Badge>
@@ -51,31 +51,30 @@ function GithubItem({ pr }: { pr: any }) {
             stale
           </Badge>
         )}
+        {pr.review_count > 0 && (
+          <Badge variant="outline" className="text-xs font-mono border-tactical-green/40 bg-tactical-green/15 text-tactical-green">
+            {pr.review_count} review{pr.review_count !== 1 ? 's' : ''}
+          </Badge>
+        )}
       </div>
     </div>
   );
 }
 
-// Email item (only technical/ project-related)
-function EmailProjectItem({ email }: { email: Email }) {
+// Technical Email Item (project-related)
+function TechnicalEmailItem({ email }: { email: Email }) {
+  const time = timeAgo(email.received_at ?? email.created_at);
   const isNegative = email.sentiment === 'negative';
   const isPositive = email.sentiment === 'positive';
   const needsReply = email.requires_reply;
-  const time = timeAgo(email.received_at ?? email.created_at);
-  
-  // Only show if it's project-related (contains keywords)
-  const isProjectRelated = email.subject?.toLowerCase().includes('pr') || 
-                          email.subject?.toLowerCase().includes('review') ||
-                          email.subject?.toLowerCase().includes('deploy') ||
-                          email.subject?.toLowerCase().includes('build') ||
-                          email.subject?.toLowerCase().includes('release');
-
-  if (!isProjectRelated) return null;
 
   return (
     <div className="rounded-md border border-border bg-secondary/30 px-4 py-3 hover:bg-secondary/50 transition-colors">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-foreground">{email.subject}</span>
+        <div className="flex items-center gap-2">
+          <Bug className="h-4 w-4 text-tactical-amber" />
+          <span className="text-sm font-semibold text-foreground">{email.subject}</span>
+        </div>
         <span className="text-xs font-mono text-muted-foreground">{time}</span>
       </div>
       <div className="flex items-center gap-2 mt-2 flex-wrap">
@@ -97,7 +96,7 @@ function EmailProjectItem({ email }: { email: Email }) {
           </Badge>
         )}
         <span className="text-xs font-mono text-muted-foreground ml-auto">
-          {email.client_name || email.from_address?.split('@')[0]}
+          {email.from_address?.split('@')[0] || 'Unknown'}
         </span>
       </div>
     </div>
@@ -105,21 +104,40 @@ function EmailProjectItem({ email }: { email: Email }) {
 }
 
 export function ProjectRadar({ emails, github = [] }: ProjectRadarProps) {
-  // Get project-related emails
-  const projectEmails = (Array.isArray(emails) ? emails : []).filter(e => 
-    e?.subject?.toLowerCase().includes('pr') || 
-    e?.subject?.toLowerCase().includes('review') ||
-    e?.subject?.toLowerCase().includes('deploy') ||
-    e?.subject?.toLowerCase().includes('build') ||
-    e?.subject?.toLowerCase().includes('release')
-  );
-
-  // Get GitHub PRs
+  // Get GitHub PRs (open ones)
   const projectPRs = (Array.isArray(github) ? github : [])
     .filter(pr => pr?.status === 'open')
-    .slice(0, 5);
+    .sort((a, b) => b.days_open - a.days_open) // Most stale first
+    .slice(0, 8);
 
-  const totalItems = projectPRs.length + projectEmails.length;
+  // Get technical/project emails (internal or project-related)
+  const technicalEmails = (Array.isArray(emails) ? emails : []).filter(e => {
+    const subject = e.subject?.toLowerCase() || '';
+    const fromAddr = e.from_address?.toLowerCase() || '';
+    
+    // Check if it's internal (company domain) OR has project keywords
+    const isInternal = fromAddr.includes('@company.com') || 
+                      fromAddr.includes('@internal') ||
+                      fromAddr.includes('@ourcompany');
+    
+    const hasProjectKeywords = subject.includes('pr-') ||
+                              subject.includes('build') ||
+                              subject.includes('deploy') ||
+                              subject.includes('release') ||
+                              subject.includes('review') ||
+                              subject.includes('bug') ||
+                              subject.includes('fix') ||
+                              subject.includes('feature');
+    
+    // Show internal emails with project keywords, OR any email with strong project signals
+    return (isInternal && hasProjectKeywords) || hasProjectKeywords;
+  }).slice(0, 5);
+
+  // Combine and sort by date
+  const allItems = [
+    ...projectPRs.map(pr => ({ type: 'pr', data: pr, date: pr.created_at })),
+    ...technicalEmails.map(email => ({ type: 'email', data: email, date: email.received_at || email.created_at }))
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   return (
     <div className="rounded-lg border border-border bg-card p-5 animate-fade-in-up h-full flex flex-col" style={{ animationDelay: '0.2s' }}>
@@ -140,34 +158,33 @@ export function ProjectRadar({ emails, github = [] }: ProjectRadarProps) {
               <p className="text-xs font-medium mb-2">🎯 Project Radar tracks:</p>
               <ul className="text-xs space-y-1.5 text-muted-foreground">
                 <li><GitPullRequest className="h-3 w-3 inline mr-1" /> Open PRs needing review</li>
-                <li><AlertCircle className="h-3 w-3 inline mr-1" /> Build/deployment issues</li>
-                <li><CheckCircle className="h-3 w-3 inline mr-1" /> Code review requests</li>
-                <li className="mt-1 pt-1 border-t border-border">Technical emails only (no client comms)</li>
+                <li><Bug className="h-3 w-3 inline mr-1" /> Build/deployment issues</li>
+                <li>📧 Technical emails (internal/project)</li>
+                <li className="mt-1 pt-1 border-t border-border">No client emails shown here</li>
               </ul>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
 
         <span className="ml-auto text-xs font-mono text-muted-foreground">
-          {totalItems} items
+          {allItems.length} items
         </span>
       </div>
 
       <div className="flex-1 min-h-0">
-        {totalItems === 0 ? (
+        {allItems.length === 0 ? (
           <div className="flex items-center justify-center h-32 text-sm text-muted-foreground font-mono">
             No project activity
           </div>
         ) : (
           <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
-            {/* Show GitHub PRs first */}
-            {projectPRs.map(pr => (
-              <GithubItem key={pr.id} pr={pr} />
-            ))}
-            {/* Then show project emails */}
-            {projectEmails.slice(0, 5).map(email => (
-              <EmailProjectItem key={email.id} email={email} />
-            ))}
+            {allItems.map((item, index) => {
+              if (item.type === 'pr') {
+                return <GithubPRItem key={`pr-${item.data.id}`} pr={item.data} />;
+              } else {
+                return <TechnicalEmailItem key={`email-${item.data.id}`} email={item.data} />;
+              }
+            })}
           </div>
         )}
       </div>
