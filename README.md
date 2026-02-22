@@ -2,7 +2,7 @@
 
 An AI-powered dashboard for engineering managers to spot team risks before they become crises.
 
-![Mission Control Dashboard](https://via.placeholder.com/800x400?text=Mission+Control+Dashboard)
+![Mission Control Dashboard](https://orbital-command-core.lovable.app)
 
 ## ✨ Features
 
