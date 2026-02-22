@@ -44,7 +44,7 @@ const Index = () => {
             </div>
 
             {/* Project Radar - Full Width */}
-            <ProjectRadar prs={prs} />
+            <ProjectRadar emails={emails} />
 
             {/* Two Column Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
