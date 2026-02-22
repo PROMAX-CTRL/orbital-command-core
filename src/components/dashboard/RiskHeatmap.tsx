@@ -38,7 +38,6 @@ function RiskCard({ risk }: { risk: RiskAssessment }) {
       onClick={() => setExpanded(!expanded)}
       className={`w-full text-left rounded-md border bg-secondary/50 p-4 transition-all duration-200 hover:bg-secondary/80 cursor-pointer ${config.glowClass} ${config.borderClass}`}
     >
-      {/* Header */}
       <div className="flex items-center gap-2 mb-2">
         <div className={`h-2 w-2 rounded-full ${config.dotClass} ${severity === 'critical' ? 'status-pulse' : ''}`} />
         <span className={`text-[10px] font-mono font-bold tracking-widest ${config.textClass}`}>
@@ -53,7 +52,6 @@ function RiskCard({ risk }: { risk: RiskAssessment }) {
         </div>
       </div>
 
-      {/* Risk type + title */}
       <div className="flex items-start gap-2.5 mb-1">
         <Icon className={`h-4 w-4 mt-0.5 flex-shrink-0 ${config.textClass}`} />
         <div className="min-w-0">
@@ -66,7 +64,6 @@ function RiskCard({ risk }: { risk: RiskAssessment }) {
         </div>
       </div>
 
-      {/* Expanded details */}
       {expanded && (
         <div className="mt-3 pt-3 border-t border-border space-y-3 animate-fade-in-up">
           {risk.description && (
@@ -102,21 +99,26 @@ export function RiskHeatmap({ risks }: RiskHeatmapProps) {
 
   return (
     <div className="rounded-lg border border-border bg-card p-5 animate-fade-in-up">
-      {/* Header with tooltip */}
-      <div className="flex items-center gap-2 mb-4">
+      {/* Header with tooltip - FIXED POSITIONING */}
+      <div className="flex items-center gap-2 mb-4 relative">
         <div className="h-2 w-2 rounded-full bg-tactical-red status-pulse" />
         <h2 className="text-sm font-mono font-semibold uppercase tracking-wider text-foreground">
           Risk Heatmap
         </h2>
         
-        <TooltipProvider>
+        <TooltipProvider delayDuration={100}>
           <Tooltip>
             <TooltipTrigger asChild>
-              <button className="h-5 w-5 rounded-full bg-secondary/50 flex items-center justify-center hover:bg-secondary transition-colors">
+              <button className="h-5 w-5 rounded-full bg-secondary/50 flex items-center justify-center hover:bg-secondary transition-colors z-10">
                 <Info className="h-3 w-3 text-muted-foreground" />
               </button>
             </TooltipTrigger>
-            <TooltipContent side="right" className="max-w-xs p-3">
+            <TooltipContent 
+              side="bottom" 
+              align="start"
+              className="max-w-xs p-3 z-50 bg-popover shadow-lg border border-border"
+              sideOffset={5}
+            >
               <p className="text-xs font-medium mb-2">🔥 Risk Types:</p>
               <ul className="text-xs space-y-1.5 text-muted-foreground">
                 <li className="flex items-start gap-2">
@@ -155,6 +157,18 @@ export function RiskHeatmap({ risks }: RiskHeatmapProps) {
         </div>
       </div>
 
+      {/* Status bar info from your image */}
+      <div className="flex items-center justify-between mb-4 text-xs font-mono text-muted-foreground border-b border-border pb-2">
+        <div className="flex items-center gap-4">
+          <span className="text-tactical-green">● LIVE</span>
+          <span>{risks.length} risks • 6 team</span>
+        </div>
+        <div>
+          Updated {new Date().toLocaleTimeString()}
+        </div>
+      </div>
+
+      {/* Risk cards */}
       {risks.length === 0 ? (
         <p className="text-sm text-muted-foreground font-mono py-4 text-center">No risks detected</p>
       ) : (
