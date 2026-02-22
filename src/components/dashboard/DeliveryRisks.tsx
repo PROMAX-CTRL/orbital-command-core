@@ -30,37 +30,34 @@ function getStaleBadge(days: number) {
   if (days > 7) return { 
     text: `${days}d`, 
     className: 'bg-tactical-red/20 text-tactical-red',
-    label: 'CRITICAL'
+    label: 'STALE'
   };
   if (days > 3) return { 
     text: `${days}d`, 
     className: 'bg-tactical-amber/20 text-tactical-amber',
-    label: 'STALE'
+    label: 'MEDIUM'
   };
   return { 
     text: `${days}d`, 
     className: 'bg-tactical-green/20 text-tactical-green',
-    label: 'HEALTHY'
+    label: 'LOW'
   };
 }
 
 export function DeliveryRisks({ prs }: DeliveryRisksProps) {
   const safePrs = Array.isArray(prs) ? prs : [];
   
-  // Filter for open PRs
+  // Filter for open PRs only
   const openPrs = safePrs
     .filter(pr => pr?.status === 'open')
-    .sort((a, b) => b.days_open - a.days_open); // Most stale first
+    .sort((a, b) => b.days_open - a.days_open);
 
-  // Calculate metrics with correct logic
-  const criticalStale = openPrs.filter(pr => pr.days_open > 7).length;
-  const stalePrs = openPrs.filter(pr => pr.days_open > 3).length; // This includes critical + medium
-  const mediumStale = openPrs.filter(pr => pr.days_open > 3 && pr.days_open <= 7).length;
-  const lowRisk = openPrs.filter(pr => pr.days_open <= 3).length;
-
-  // Total should equal openPrs.length
+  // Calculate metrics based on actual data
+  const stalePrs = openPrs.filter(pr => pr.days_open > 7).length;  // >7 days
+  const mediumPrs = openPrs.filter(pr => pr.days_open > 3 && pr.days_open <= 7).length; // 4-7 days
+  const lowPrs = openPrs.filter(pr => pr.days_open <= 3).length; // ≤3 days
+  
   const totalPRs = openPrs.length;
-  const calculatedTotal = criticalStale + mediumStale + lowRisk;
 
   return (
     <div className="rounded-lg border border-border bg-card p-5 animate-fade-in-up h-full flex flex-col">
@@ -81,12 +78,12 @@ export function DeliveryRisks({ prs }: DeliveryRisksProps) {
             <TooltipContent side="right" className="max-w-xs p-3">
               <p className="text-xs font-medium mb-2">🚧 Delivery Risk Levels:</p>
               <ul className="text-xs space-y-1.5 text-muted-foreground">
-                <li><span className="text-tactical-red">🔴 CRITICAL</span> = &gt;7 days</li>
-                <li><span className="text-tactical-amber">🟡 STALE</span> = 4-7 days</li>
-                <li><span className="text-tactical-green">🟢 HEALTHY</span> = ≤3 days</li>
+                <li><span className="text-tactical-red">🔴 STALE</span> = &gt;7 days ({stalePrs} PRs)</li>
+                <li><span className="text-tactical-amber">🟡 MEDIUM</span> = 4-7 days ({mediumPrs} PRs)</li>
+                <li><span className="text-tactical-green">🟢 LOW</span> = ≤3 days ({lowPrs} PRs)</li>
               </ul>
               <p className="text-xs mt-2 pt-2 border-t border-border">
-                Total PRs: {totalPRs} (Stale: {stalePrs})
+                Total: {totalPRs} open PRs
               </p>
             </TooltipContent>
           </Tooltip>
@@ -94,13 +91,13 @@ export function DeliveryRisks({ prs }: DeliveryRisksProps) {
 
         {stalePrs > 0 && (
           <div className="ml-auto flex items-center gap-1">
-            <AlertTriangle className="h-4 w-4 text-tactical-amber" />
-            <span className="text-xs font-mono font-bold text-tactical-amber">{stalePrs} stale</span>
+            <AlertTriangle className="h-4 w-4 text-tactical-red" />
+            <span className="text-xs font-mono font-bold text-tactical-red">{stalePrs} stale</span>
           </div>
         )}
       </div>
 
-      {/* METRIC CARDS */}
+      {/* METRIC CARDS - Accurate to your data */}
       <div className="grid grid-cols-4 gap-3 mb-4 flex-shrink-0">
         <div className="bg-secondary/30 rounded-md p-3 text-center">
           <div className="text-xs font-mono text-muted-foreground uppercase">OPEN</div>
@@ -108,19 +105,19 @@ export function DeliveryRisks({ prs }: DeliveryRisksProps) {
         </div>
         <div className="bg-secondary/30 rounded-md p-3 text-center">
           <div className="text-xs font-mono text-muted-foreground uppercase">STALE</div>
-          <div className="text-2xl font-bold text-tactical-amber">{stalePrs}</div>
+          <div className="text-2xl font-bold text-tactical-red">{stalePrs}</div>
         </div>
         <div className="bg-secondary/30 rounded-md p-3 text-center">
           <div className="text-xs font-mono text-muted-foreground uppercase">MEDIUM</div>
-          <div className="text-2xl font-bold text-tactical-blue">{mediumStale}</div>
+          <div className="text-2xl font-bold text-tactical-amber">{mediumPrs}</div>
         </div>
         <div className="bg-secondary/30 rounded-md p-3 text-center">
           <div className="text-xs font-mono text-muted-foreground uppercase">LOW</div>
-          <div className="text-2xl font-bold text-tactical-green">{lowRisk}</div>
+          <div className="text-2xl font-bold text-tactical-green">{lowPrs}</div>
         </div>
       </div>
 
-      {/* PR LIST */}
+      {/* PR LIST - Shows only open PRs with accurate labels */}
       <div className="flex-1 min-h-0">
         {openPrs.length === 0 ? (
           <div className="flex items-center justify-center h-32 text-sm text-muted-foreground font-mono">
@@ -138,7 +135,7 @@ export function DeliveryRisks({ prs }: DeliveryRisksProps) {
                   <GitBranch className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                      <div className="text-sm font-medium text-foreground truncate">
+                      <div className="text-sm font-medium text-foreground">
                         {pr.pr_title} <span className="text-muted-foreground">#{pr.pr_number}</span>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
@@ -148,19 +145,13 @@ export function DeliveryRisks({ prs }: DeliveryRisksProps) {
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 mt-2 flex-wrap">
-                      <span className="text-xs font-mono text-muted-foreground bg-secondary/50 px-2 py-0.5 rounded">
-                        @{pr.author}
+                    <div className="flex items-center justify-between mt-2">
+                      <span className="text-xs font-mono text-muted-foreground">
+                        @{pr.author} · {pr.repo_name}
                       </span>
-                      <span className="text-xs text-muted-foreground">·</span>
-                      <span className="text-xs font-mono text-muted-foreground truncate">
-                        {pr.repo_name}
+                      <span className={`text-xs font-mono font-bold ${badge.className}`}>
+                        {badge.label}
                       </span>
-                      {pr.days_open > 3 && (
-                        <span className={`text-xs font-mono font-bold ml-auto ${badge.className}`}>
-                          {badge.label}
-                        </span>
-                      )}
                     </div>
                   </div>
                 </div>
