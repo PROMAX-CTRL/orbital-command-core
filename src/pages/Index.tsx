@@ -48,7 +48,7 @@ const Index = () => {
             {/* Two Column Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <ClientWatch emails={emails} />
-              <NextActions actions={actions} />
+              <NextActions risks={risks} onComplete={() => window.location.reload()} />
             </div>
           </div>
         )}
