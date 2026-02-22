@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import type { Email } from '@/types/dashboard';
-import { Radar } from 'lucide-react';
+import { Radar, AlertCircle, CheckCircle, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface ProjectRadarProps {
@@ -13,53 +14,57 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-function getTagBadges(email: Email) {
-  const tags: { label: string; className: string }[] = [];
-  if (email.sentiment === 'negative') {
-    tags.push({ label: 'negative', className: 'border-destructive/40 bg-destructive/15 text-destructive' });
-  }
-  if (email.sentiment === 'positive') {
-    tags.push({ label: 'positive', className: 'border-primary/40 bg-primary/15 text-primary' });
-  }
-  if (email.requires_reply) {
-    tags.push({ label: 'reply', className: 'border-yellow-500/40 bg-yellow-500/15 text-yellow-400' });
-  }
-  return tags;
-}
-
-function EmailCard({ email }: { email: Email }) {
-  const tags = getTagBadges(email);
+function ProjectItem({ email }: { email: Email }) {
+  const isNegative = email.sentiment === 'negative';
+  const isPositive = email.sentiment === 'positive';
+  const needsReply = email.requires_reply;
   const time = timeAgo(email.received_at ?? email.created_at);
 
   return (
-    <div className="rounded-md border border-border bg-secondary/30 px-4 py-3 flex items-center gap-3">
+    <div className="rounded-md border border-border bg-secondary/30 px-4 py-3 flex items-center gap-3 hover:bg-secondary/50 transition-colors">
       <div className="flex-1 min-w-0">
         <span className="text-sm font-semibold text-foreground">{email.subject}</span>
         <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-          {tags.map((tag) => (
-            <Badge
-              key={tag.label}
-              variant="outline"
-              className={`text-[10px] font-mono px-1.5 py-0 ${tag.className}`}
-            >
-              {tag.label}
+          {isNegative && (
+            <Badge variant="outline" className="text-[10px] font-mono border-destructive/40 bg-destructive/15 text-destructive px-1.5 py-0">
+              <AlertCircle className="h-2.5 w-2.5 mr-1" />
+              negative
             </Badge>
-          ))}
+          )}
+          {isPositive && (
+            <Badge variant="outline" className="text-[10px] font-mono border-primary/40 bg-primary/15 text-primary px-1.5 py-0">
+              <CheckCircle className="h-2.5 w-2.5 mr-1" />
+              positive
+            </Badge>
+          )}
+          {needsReply && (
+            <Badge variant="outline" className="text-[10px] font-mono border-yellow-500/40 bg-yellow-500/15 text-yellow-400 px-1.5 py-0">
+              reply needed
+            </Badge>
+          )}
+        </div>
+        <div className="flex items-center gap-2 mt-1">
+          <span className="text-xs font-mono text-muted-foreground">
+            {email.client_name || email.from_address.split('@')[0]}
+          </span>
         </div>
       </div>
-      <span className="text-xs font-mono text-muted-foreground flex-shrink-0">{time}</span>
+      <div className="flex items-center gap-1.5 flex-shrink-0">
+        <Clock className="h-3 w-3 text-muted-foreground" />
+        <span className="text-xs font-mono text-muted-foreground">{time}</span>
+      </div>
     </div>
   );
 }
 
 export function ProjectRadar({ emails }: ProjectRadarProps) {
-  // Show emails that are negative, require reply, or positive (noteworthy)
-  const flagged = emails.filter(
+  // Show project-relevant items (negative, need reply, or positive)
+  const projectItems = emails.filter(
     (e) => e.sentiment === 'negative' || e.requires_reply || e.sentiment === 'positive'
   );
 
   // Sort: negative first, then by timestamp desc
-  const sorted = [...flagged].sort((a, b) => {
+  const sorted = [...projectItems].sort((a, b) => {
     const aScore = a.sentiment === 'negative' ? 2 : a.requires_reply ? 1 : 0;
     const bScore = b.sentiment === 'negative' ? 2 : b.requires_reply ? 1 : 0;
     if (bScore !== aScore) return bScore - aScore;
@@ -83,9 +88,9 @@ export function ProjectRadar({ emails }: ProjectRadarProps) {
           No flagged items
         </p>
       ) : (
-        <div className="space-y-2 max-h-72 overflow-y-auto">
-          {sorted.map((email) => (
-            <EmailCard key={email.id} email={email} />
+        <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+          {sorted.map((item) => (
+            <ProjectItem key={item.id} email={item} />
           ))}
         </div>
       )}
