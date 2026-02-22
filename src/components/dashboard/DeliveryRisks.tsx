@@ -1,4 +1,4 @@
-import { GitPullRequest, AlertTriangle, Clock, GitMerge, GitBranch } from 'lucide-react';
+import { GitPullRequest, AlertTriangle, Clock, GitBranch } from 'lucide-react';
 
 interface GithubActivity {
   id: number;
@@ -20,15 +20,6 @@ interface DeliveryRisksProps {
   prs: GithubActivity[];
 }
 
-function getDaysStale(dateStr: string) {
-  if (!dateStr) return 0;
-  try {
-    return Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
-  } catch {
-    return 0;
-  }
-}
-
 function getStaleBadge(days: number) {
   if (days > 7) return { text: `${days}d`, className: 'bg-tactical-red/20 text-tactical-red' };
   if (days > 3) return { text: `${days}d`, className: 'bg-tactical-amber/20 text-tactical-amber' };
@@ -42,7 +33,7 @@ export function DeliveryRisks({ prs }: DeliveryRisksProps) {
   // Filter for open PRs (status = 'open')
   const openPrs = safePrs
     .filter(pr => pr?.status === 'open')
-    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    .sort((a, b) => a.days_open - b.days_open);
 
   // Calculate metrics
   const stalePrs = openPrs.filter(pr => pr.days_open > 3);
@@ -51,8 +42,9 @@ export function DeliveryRisks({ prs }: DeliveryRisksProps) {
   const lowRisk = openPrs.filter(pr => pr.days_open <= 3).length;
 
   return (
-    <div className="rounded-lg border border-border bg-card p-5 animate-fade-in-up" style={{ animationDelay: '0.15s' }}>
-      <div className="flex items-center gap-2 mb-4">
+    <div className="rounded-lg border border-border bg-card p-5 animate-fade-in-up h-full flex flex-col" style={{ animationDelay: '0.15s' }}>
+      {/* Header - fixed at top */}
+      <div className="flex items-center gap-2 mb-4 flex-shrink-0">
         <GitPullRequest className="h-4 w-4 text-tactical-amber" />
         <h2 className="text-sm font-mono font-semibold uppercase tracking-wider text-foreground">
           Delivery Risks
@@ -65,8 +57,8 @@ export function DeliveryRisks({ prs }: DeliveryRisksProps) {
         )}
       </div>
 
-      {/* METRIC CARDS */}
-      <div className="grid grid-cols-4 gap-2 mb-4">
+      {/* METRIC CARDS - fixed grid */}
+      <div className="grid grid-cols-4 gap-2 mb-4 flex-shrink-0">
         <div className="bg-secondary/30 rounded-md p-2 text-center">
           <div className="text-[10px] font-mono text-muted-foreground uppercase">OPEN</div>
           <div className="text-xl font-bold text-foreground">{openPrs.length}</div>
@@ -85,40 +77,44 @@ export function DeliveryRisks({ prs }: DeliveryRisksProps) {
         </div>
       </div>
 
-      {/* PR LIST */}
-      {openPrs.length === 0 ? (
-        <p className="text-sm text-muted-foreground font-mono py-4 text-center">No open PRs</p>
-      ) : (
-        <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-          {openPrs.slice(0, 5).map(pr => {
-            const badge = getStaleBadge(pr.days_open);
-            return (
-              <div
-                key={pr.id}
-                className="flex items-start gap-3 rounded-md bg-secondary/30 px-3 py-2.5 hover:bg-secondary/50 transition-colors"
-              >
-                <GitBranch className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm text-foreground truncate font-medium">
-                    {pr.pr_title} (#{pr.pr_number})
+      {/* PR LIST - scrollable area that takes only needed space */}
+      <div className="flex-1 min-h-0">
+        {openPrs.length === 0 ? (
+          <div className="flex items-center justify-center h-16 text-sm text-muted-foreground font-mono">
+            No open PRs
+          </div>
+        ) : (
+          <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
+            {openPrs.slice(0, 5).map(pr => {
+              const badge = getStaleBadge(pr.days_open);
+              return (
+                <div
+                  key={pr.id}
+                  className="flex items-start gap-3 rounded-md bg-secondary/30 px-3 py-2 hover:bg-secondary/50 transition-colors"
+                >
+                  <GitBranch className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm text-foreground truncate font-medium">
+                      {pr.pr_title} <span className="text-muted-foreground">#{pr.pr_number}</span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-xs font-mono text-muted-foreground">@{pr.author}</span>
+                      <span className="text-xs font-mono text-muted-foreground">•</span>
+                      <span className="text-xs font-mono text-muted-foreground truncate">{pr.repo_name}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs font-mono text-muted-foreground">@{pr.author}</span>
-                    <span className="text-xs font-mono text-muted-foreground">•</span>
-                    <span className="text-xs font-mono text-muted-foreground truncate">{pr.repo_name}</span>
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <Clock className="h-3 w-3 text-muted-foreground" />
+                    <span className={`text-xs font-mono font-bold px-1.5 py-0.5 rounded ${badge.className}`}>
+                      {pr.days_open}d
+                    </span>
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                  <Clock className="h-3 w-3 text-muted-foreground" />
-                  <span className={`text-xs font-mono font-bold px-1.5 py-0.5 rounded ${badge.className}`}>
-                    {pr.days_open}d
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
