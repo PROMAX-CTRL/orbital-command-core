@@ -110,24 +110,25 @@ export function ProjectRadar({ emails, github = [] }: ProjectRadarProps) {
     .sort((a, b) => b.days_open - a.days_open) // Most stale first
     .slice(0, 8);
 
-  // Get technical/project emails (internal or project-related)
-  const technicalEmails = (Array.isArray(emails) ? emails : []).filter(e => {
+// Replace the filtering section with this:
+const projectPRs = (Array.isArray(github) ? github : [])
+  .filter(pr => pr?.status === 'open') // Show all open PRs
+  .sort((a, b) => b.days_open - a.days_open);
+
+const technicalEmails = (Array.isArray(emails) ? emails : [])
+  .filter(e => {
+    // Show emails that are project-related OR from internal domains
     const subject = e.subject?.toLowerCase() || '';
-    const fromAddr = e.from_address?.toLowerCase() || '';
+    const isProjectRelated = subject.includes('pr') || 
+                            subject.includes('build') || 
+                            subject.includes('deploy') ||
+                            subject.includes('review') ||
+                            subject.includes('bug') ||
+                            subject.includes('fix');
     
-    // Check if it's internal (company domain) OR has project keywords
-    const isInternal = fromAddr.includes('@company.com') || 
-                      fromAddr.includes('@internal') ||
-                      fromAddr.includes('@ourcompany');
-    
-    const hasProjectKeywords = subject.includes('pr-') ||
-                              subject.includes('build') ||
-                              subject.includes('deploy') ||
-                              subject.includes('release') ||
-                              subject.includes('review') ||
-                              subject.includes('bug') ||
-                              subject.includes('fix') ||
-                              subject.includes('feature');
+    // For now, show ALL emails to test
+    return true; // TEMPORARY - shows all emails
+  });
     
     // Show internal emails with project keywords, OR any email with strong project signals
     return (isInternal && hasProjectKeywords) || hasProjectKeywords;
