@@ -15,11 +15,27 @@ const severityConfig = {
   low: { label: 'LOW', dotClass: 'bg-tactical-green', glowClass: '', textClass: 'text-tactical-green', borderClass: 'border-tactical-green/30' },
 };
 
-const riskTypeConfig: Record<string, { icon: typeof Flame; label: string }> = {
-  burnout: { icon: Flame, label: 'Burnout Risk' },
-  delivery: { icon: GitPullRequest, label: 'Delivery Risk' },
-  stakeholder: { icon: Users, label: 'Stakeholder Risk' },
-  technical_debt: { icon: Wrench, label: 'Tech Debt' },
+const riskTypeConfig: Record<string, { icon: typeof Flame; label: string; description: string }> = {
+  burnout: { 
+    icon: Flame, 
+    label: 'Burnout Risk',
+    description: 'Team members working late with negative sentiment'
+  },
+  delivery: { 
+    icon: GitPullRequest, 
+    label: 'Delivery Risk',
+    description: 'Stale PRs, missed deadlines'
+  },
+  stakeholder: { 
+    icon: Users, 
+    label: 'Stakeholder Risk',
+    description: 'Client issues, urgent emails'
+  },
+  technical_debt: { 
+    icon: Wrench, 
+    label: 'Tech Debt',
+    description: 'Outdated dependencies, maintenance needs'
+  },
 };
 
 interface RiskHeatmapProps {
@@ -30,7 +46,11 @@ function RiskCard({ risk }: { risk: RiskAssessment }) {
   const [expanded, setExpanded] = useState(false);
   const severity = risk.severity as keyof typeof severityConfig;
   const config = severityConfig[severity] || severityConfig.medium;
-  const typeConfig = riskTypeConfig[risk.risk_type] || { icon: AlertTriangle, label: risk.risk_type };
+  const typeConfig = riskTypeConfig[risk.risk_type] || { 
+    icon: AlertTriangle, 
+    label: risk.risk_type,
+    description: risk.description || 'Risk detected'
+  };
   const Icon = typeConfig.icon;
 
   return (
@@ -94,12 +114,22 @@ function RiskCard({ risk }: { risk: RiskAssessment }) {
 }
 
 export function RiskHeatmap({ risks }: RiskHeatmapProps) {
+  // Debug log to see what risks are coming in
+  console.log('RiskHeatmap - All risks:', risks);
+  console.log('RiskHeatmap - Risk types:', risks.map(r => r.risk_type));
+  
   const activeCount = risks.filter(r => r.is_active).length;
   const criticalCount = risks.filter(r => r.severity === 'critical' || r.severity === 'high').length;
 
+  // Sort risks by severity (critical first, then high, medium, low)
+  const sortedRisks = [...risks].sort((a, b) => {
+    const severityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+    return (severityOrder[a.severity] || 99) - (severityOrder[b.severity] || 99);
+  });
+
   return (
     <div className="rounded-lg border border-border bg-card p-5 animate-fade-in-up">
-      {/* Header with tooltip - FIXED POSITIONING */}
+      {/* Header with tooltip */}
       <div className="flex items-center gap-2 mb-4 relative">
         <div className="h-2 w-2 rounded-full bg-tactical-red status-pulse" />
         <h2 className="text-sm font-mono font-semibold uppercase tracking-wider text-foreground">
@@ -157,7 +187,7 @@ export function RiskHeatmap({ risks }: RiskHeatmapProps) {
         </div>
       </div>
 
-      {/* Status bar info from your image */}
+      {/* Status bar info */}
       <div className="flex items-center justify-between mb-4 text-xs font-mono text-muted-foreground border-b border-border pb-2">
         <div className="flex items-center gap-4">
           <span className="text-tactical-green">● LIVE</span>
@@ -169,11 +199,11 @@ export function RiskHeatmap({ risks }: RiskHeatmapProps) {
       </div>
 
       {/* Risk cards */}
-      {risks.length === 0 ? (
+      {sortedRisks.length === 0 ? (
         <p className="text-sm text-muted-foreground font-mono py-4 text-center">No risks detected</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {risks.map(risk => (
+          {sortedRisks.map(risk => (
             <RiskCard key={risk.id} risk={risk} />
           ))}
         </div>
