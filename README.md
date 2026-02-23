@@ -198,8 +198,9 @@ You can also import this sample data to test the dashboard:
 
 ## 🎥 Demo Video
 
-[Watch the demo](https://your-video-link-here.com)
+📹 **Watch the demo here:** [Google Drive Link](https://drive.google.com/file/d/1hZMMcvCiETcOuDvMot7qBp0-YXr-i8Gx/view?usp=drive_link)
 
+*Note: Video is hosted on Google Drive due to time constraints*
 
 ## 🙏 Acknowledgements
 
