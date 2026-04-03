@@ -196,20 +196,9 @@ To run this project, you'll need to create the following tables in your Supabase
 You can also import this sample data to test the dashboard:
 [Link to sample_data.sql](https://github.com/PROMAX-CTRL/orbital-command-core/blob/main/sample_data.sql)
 
-## 🎥 Demo Video
-
-📹 **Watch the demo here:** [Google Drive Link](https://drive.google.com/file/d/1hZMMcvCiETcOuDvMot7qBp0-YXr-i8Gx/view?usp=drive_link)
-
-*Note: Video is hosted on Google Drive due to time constraints*
-
 ## 🙏 Acknowledgements
 
 - Built for CXI + AI Mission Control Hackathon 2026
 - Inspired by real engineering management challenges
 
-## 👥 Team
-
-- *Mayank Arora* - First Year Computer Science Student
-
-*I was one of the last three students who stayed through the entire hackathon explanation day—your passion for innovation kept me here, and I hope this project reflects that same dedication!*
 
